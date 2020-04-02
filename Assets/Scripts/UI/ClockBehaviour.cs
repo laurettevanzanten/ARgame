@@ -1,8 +1,12 @@
-﻿using System.Collections;
+﻿
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+/// <summary>
+/// Behaviour driving the Clock UI Element
+/// </summary>
 public class ClockBehaviour : MonoBehaviour
 {
     public string textFormat = "Time remaining {0}:{1}";
