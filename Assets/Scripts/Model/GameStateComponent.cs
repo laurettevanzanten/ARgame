@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class GameStateComponent : MonoBehaviour
 {
     public static GameStateComponent Instance { get; set; }
@@ -9,8 +10,10 @@ public class GameStateComponent : MonoBehaviour
     public float maxTimeSeconds = 15 * 60;
 
     public TextAsset orders;
+    public TextAsset rackSetup;
 
-    public GameObject[] itemVariations;
+    public ItemVariation[] itemVariations;
+
     public GameObject[] rackVariations;
 
     public int rackCount = 1;
@@ -36,36 +39,20 @@ public class GameStateComponent : MonoBehaviour
         Instance = this;
         startTime = Time.time;
 
-        Orders = ParseOrders();
-        CreateRacks();
+        Orders = CSVParser.ParseGrid(orders, (value, x, y) => new OrderProperties(value));
+
+        if (rackSetup == null)
+        {
+            CreateRandomRacks();
+        }
+        else
+        {
+            //SetupRacks(CSVParser.ParseGrid(rackSetup, (value, x, y) => new OrderProperties(value)));
+        }
 
         CollectedItems.Add(new List<string>());
     }
-
-    private List<List<OrderProperties>> ParseOrders()
-    {
-        var result = new List<List<OrderProperties>>();
-
-        if (orders != null)
-        {
-            var orderLines = orders.text.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var line in orderLines)
-            {
-                var boxList = new List<OrderProperties>();
-                var boxIds = line.Split(new char[] { ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (var boxIdText in boxIds)
-                {
-                    boxList.Add(new OrderProperties(boxIdText));
-                }
-
-                result.Add(boxList);
-            }
-        }
-
-        return result;
-    }
+    
 
     public GameObject ResolveBoxObject(OrderProperties properties)
     {
@@ -84,7 +71,7 @@ public class GameStateComponent : MonoBehaviour
         var boxObject = ResolveBoxObject(rackId, x, y);
         var itemProvider = boxObject.GetComponent<ItemProvider>();
 
-        return itemProvider.itemPrefab.name; 
+        return itemProvider.ItemName();
     }
 
     public string ResolveItemName(OrderProperties properties)
@@ -139,7 +126,7 @@ public class GameStateComponent : MonoBehaviour
         }
     }
 
-    private void CreateRacks()
+    private void CreateRandomRacks()
     {
         RackObjects = new GameObject[rackCount];
 
@@ -164,7 +151,9 @@ public class GameStateComponent : MonoBehaviour
             {
                 for (int y = 0; y < rackComponent.height; y++)
                 {
-                    boxObjects[x][y].GetComponent<ItemProvider>().itemPrefab = itemVariations[UnityEngine.Random.Range(0, itemVariations.Length)];
+                    var provider = boxObjects[x][y].GetComponent<ItemProvider>();
+                    provider.itemVariation = itemVariations[UnityEngine.Random.Range(0, itemVariations.Length)];
+                    provider.itemSource = ItemSourceType.Variation;
                 }
             }
 

@@ -276,8 +276,36 @@ MonoBehaviour:
   maxTimeSeconds: 900
   orders: {fileID: 4900000, guid: 192403cd28e17a24facd2946a70fc1d0, type: 3}
   itemVariations:
-  - {fileID: 6125778862348556051, guid: 5b05b51c0e91bc04c818db24a235dd16, type: 3}
-  - {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0, type: 3}
+  - color: {r: 0.96446776, g: 0.9811321, b: 0.0046279924, a: 1}
+    shortName: yPen
+    fullName: Yellow pen
+    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0.9811321, g: 0.5482222, b: 0.31007475, a: 1}
+    shortName: oPen
+    fullName: Orange pen
+    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0.7073366, g: 0.9433962, b: 0.6185475, a: 1}
+    shortName: gPen
+    fullName: Green pen
+    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5235849, b: 0.8724409, a: 1}
+    shortName: pPen
+    fullName: Pink pen
+    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0.003921577, g: 0.75314593, b: 0.98039216, a: 1}
+    shortName: bPen
+    fullName: Blue pen
+    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
   rackVariations:
   - {fileID: 4989390358863153904, guid: ff4fe3059b3f8da4a9958e61950b7525, type: 3}
   rackCount: 3
