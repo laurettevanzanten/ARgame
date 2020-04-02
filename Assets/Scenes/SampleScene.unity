@@ -275,6 +275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxTimeSeconds: 900
   orders: {fileID: 4900000, guid: 192403cd28e17a24facd2946a70fc1d0, type: 3}
+  rackSetup: {fileID: 0}
   itemVariations:
   - color: {r: 0.96446776, g: 0.9811321, b: 0.0046279924, a: 1}
     shortName: yPen
@@ -304,6 +305,18 @@ MonoBehaviour:
     shortName: bPen
     fullName: Blue pen
     prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0.003921577, g: 0.75314593, b: 0.98039216, a: 1}
+    shortName: bPcl
+    fullName: Blue pencil
+    prefab: {fileID: 7631949042385560448, guid: 0060dd146307741489f5b855afcf1093,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0.98039216, g: 0.6746335, b: 0.003921577, a: 1}
+    shortName: oPcl
+    fullName: Orange pencil
+    prefab: {fileID: 7631949042385560448, guid: 0060dd146307741489f5b855afcf1093,
       type: 3}
     prefabChildOverlay: Overlay
   rackVariations:
