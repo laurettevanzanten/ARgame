@@ -44,9 +44,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   width: 3
-  height: 4
+  height: 5
   spacing: {x: 1.2, y: 1.2, z: 0}
   spriteMinScale: {x: 0.6, y: 0.6, z: 1}
   spriteMaxScale: {x: 0.7, y: 0.7, z: 1}
   boxPrefab: {fileID: 1232545145495783667, guid: 3f99265fbe4ba9a47947df860964b266,
     type: 3}
+  boxSpriteName: Sprite-Box
+  labelName: Label
+  labelFormat: A{0}.{1}
+  autoFillRack: 0

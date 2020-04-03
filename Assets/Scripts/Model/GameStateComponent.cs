@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -47,7 +48,7 @@ public class GameStateComponent : MonoBehaviour
         }
         else
         {
-            //SetupRacks(CSVParser.ParseGrid(rackSetup, (value, x, y) => new OrderProperties(value)));
+            SetupRacks(CSVParser.ParseGrid(rackSetup, (value, x, y) => value));
         }
 
         CollectedItems.Add(new List<string>());
@@ -123,6 +124,76 @@ public class GameStateComponent : MonoBehaviour
             {
                 CurrentOrderLine = 0;
             }
+        }
+    }
+
+    private string ResolveItemVaration(List<List<string>> grid, int x, int y)
+    {
+        if (grid.Count > y )
+        {
+            var row = grid[y];
+
+            if (row.Count > x)
+            {
+                return row[x];
+            }
+        }
+
+        return "";
+    }
+
+    private void SetupRacks(List<List<string>> grid)
+    {
+        RackObjects = new GameObject[rackCount];
+
+        var basePosition = transform.position - (rackCount / 2) * rackSpacing;
+        var rackLabel = char.ToUpper(rackLabelPrefix);
+
+        for (int i = 0; i < rackCount; i++)
+        {
+            var rackObj = Instantiate(rackVariations[UnityEngine.Random.Range(0, rackVariations.Length)]);
+            var rackComponent = rackObj.GetComponent<RackComponent>();
+
+            rackObj.transform.parent = transform;
+            rackObj.transform.position = basePosition + i * rackSpacing;
+
+            rackObj.name = "Rack-" + rackLabel;
+
+            rackComponent.labelFormat = rackLabel + "{0}.{1}";
+
+            var boxObjects = rackComponent.FillRack(rackComponent.width, rackComponent.height);
+
+            for (int x = 0; x < rackComponent.width; x++)
+            {
+                for (int y = 0; y < rackComponent.height; y++)
+                {
+                    var provider = boxObjects[x][y].GetComponent<ItemProvider>();
+                    var itemName = ResolveItemVaration(grid, x + rackComponent.width * i, y);
+
+                    if (string.IsNullOrEmpty(itemName))
+                    {
+                        provider.itemSource = ItemSourceType.None;
+                    }
+                    else
+                    {
+                        var itemVaration = itemVariations.FirstOrDefault(variation => variation.shortName == itemName);
+
+                        if (itemVaration == null)
+                        {
+                            provider.itemSource = ItemSourceType.None;
+                        }
+                        else
+                        {
+                            provider.itemVariation = itemVaration;
+                            provider.itemSource = ItemSourceType.Variation;
+                        }
+                    }
+                }
+            }
+
+            RackObjects[i] = rackObj;
+
+            rackLabel++;
         }
     }
 

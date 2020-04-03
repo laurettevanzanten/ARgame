@@ -3,6 +3,7 @@
 public enum ItemSourceType
 {
     Prefab,
+    None,
     Variation
 }
 
@@ -45,20 +46,33 @@ public class ItemProvider : MonoBehaviour
         {
             if (Time.time - mouseDownTime > itemSpawnTime)
             {
-                var spawnedItem = itemSource == ItemSourceType.Prefab
-                                    ? GameObject.Instantiate(itemPrefab)
-                                    : itemVariation.Instantiate();
+                var spawnedItem = InstantiateItem();
 
-                var worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                if (spawnedItem != null)
+                {
+                    var worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-                worldPosition.z = gameObject.transform.position.z;
+                    worldPosition.z = gameObject.transform.position.z;
 
-                spawnedItem.transform.position = worldPosition;
-                
+                    spawnedItem.transform.position = worldPosition;
+                }
 
                 isMouseDown = false;
             }
         }
+    }
+
+    public GameObject InstantiateItem()
+    {
+        switch (itemSource)
+        {
+            case ItemSourceType.Variation:
+                return itemVariation.Instantiate();
+            case ItemSourceType.Prefab:
+                return GameObject.Instantiate(itemPrefab);
+        }
+
+        return null;
     }
 
     public void OnMouseExit()
@@ -81,6 +95,8 @@ public class ItemProvider : MonoBehaviour
                 return itemVariation.fullName;
             case ItemSourceType.Prefab:
                 return itemPrefab.name;
+            case ItemSourceType.None:
+                return "No item specified";
         }
 
         return "unknown item";
