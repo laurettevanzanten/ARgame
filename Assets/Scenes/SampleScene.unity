@@ -275,7 +275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxTimeSeconds: 900
   orders: {fileID: 4900000, guid: 192403cd28e17a24facd2946a70fc1d0, type: 3}
-  rackSetup: {fileID: 0}
+  rackSetup: {fileID: 4900000, guid: 14a51ace8ff3e0643b83e2ea01c464b9, type: 3}
   itemVariations:
   - color: {r: 0.96446776, g: 0.9811321, b: 0.0046279924, a: 1}
     shortName: yPen
