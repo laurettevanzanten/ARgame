@@ -283,40 +283,274 @@ MonoBehaviour:
     prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
       type: 3}
     prefabChildOverlay: Overlay
-  - color: {r: 0.9811321, g: 0.5482222, b: 0.31007475, a: 1}
-    shortName: oPen
-    fullName: Orange pen
-    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
-      type: 3}
-    prefabChildOverlay: Overlay
-  - color: {r: 0.7073366, g: 0.9433962, b: 0.6185475, a: 1}
-    shortName: gPen
-    fullName: Green pen
-    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
-      type: 3}
-    prefabChildOverlay: Overlay
-  - color: {r: 1, g: 0.5235849, b: 0.8724409, a: 1}
-    shortName: pPen
-    fullName: Pink pen
-    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
-      type: 3}
-    prefabChildOverlay: Overlay
-  - color: {r: 0.003921577, g: 0.75314593, b: 0.98039216, a: 1}
+  - color: {r: 0, g: 0.70077515, b: 1, a: 1}
     shortName: bPen
-    fullName: Blue pen
-    prefab: {fileID: 7975293443646501342, guid: aa1810f60b06e9540936446cadd613e0,
+    fullName: Pen (blue)
+    prefab: {fileID: 7089661267062474023, guid: 4f55e3dd506db1747b0328d7feb5504b,
       type: 3}
     prefabChildOverlay: Overlay
-  - color: {r: 0.003921577, g: 0.75314593, b: 0.98039216, a: 1}
+  - color: {r: 0, g: 1, b: 0.060247898, a: 1}
+    shortName: gPen
+    fullName: Pen (green)
+    prefab: {fileID: 7089661267062474023, guid: 4f55e3dd506db1747b0328d7feb5504b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5663546, b: 0, a: 1}
+    shortName: oPen
+    fullName: Pen (orange)
+    prefab: {fileID: 7089661267062474023, guid: 4f55e3dd506db1747b0328d7feb5504b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.9675422, b: 0, a: 1}
+    shortName: yPen
+    fullName: Pen (yellow)
+    prefab: {fileID: 7089661267062474023, guid: 4f55e3dd506db1747b0328d7feb5504b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9341049, a: 1}
+    shortName: pPen
+    fullName: Pen (pink)
+    prefab: {fileID: 7089661267062474023, guid: 4f55e3dd506db1747b0328d7feb5504b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
     shortName: bPcl
-    fullName: Blue pencil
-    prefab: {fileID: 7631949042385560448, guid: 0060dd146307741489f5b855afcf1093,
+    fullName: Pencil (blue)
+    prefab: {fileID: 4729258917727812812, guid: 4299fe6d14332a846aaf519aefe6b1ea,
       type: 3}
     prefabChildOverlay: Overlay
-  - color: {r: 0.98039216, g: 0.6746335, b: 0.003921577, a: 1}
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gPcl
+    fullName: Pencil (green)
+    prefab: {fileID: 4729258917727812812, guid: 4299fe6d14332a846aaf519aefe6b1ea,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yPcl
+    fullName: Pencil (yellow)
+    prefab: {fileID: 4729258917727812812, guid: 4299fe6d14332a846aaf519aefe6b1ea,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
     shortName: oPcl
-    fullName: Orange pencil
-    prefab: {fileID: 7631949042385560448, guid: 0060dd146307741489f5b855afcf1093,
+    fullName: Pencil (orange)
+    prefab: {fileID: 4729258917727812812, guid: 4299fe6d14332a846aaf519aefe6b1ea,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pPcl
+    fullName: Pencil (pink)
+    prefab: {fileID: 4729258917727812812, guid: 4299fe6d14332a846aaf519aefe6b1ea,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bHlg
+    fullName: Highlighter (blue)
+    prefab: {fileID: 5348680261513356925, guid: 31b5742b70ec57f47965d3ec8e101f5d,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gHlg
+    fullName: Highlighter (green)
+    prefab: {fileID: 5348680261513356925, guid: 31b5742b70ec57f47965d3ec8e101f5d,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yHlg
+    fullName: Highlighter (yellow)
+    prefab: {fileID: 5348680261513356925, guid: 31b5742b70ec57f47965d3ec8e101f5d,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oHlg
+    fullName: Highlighter (orange)
+    prefab: {fileID: 5348680261513356925, guid: 31b5742b70ec57f47965d3ec8e101f5d,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pHlg
+    fullName: Highlighter (pink)
+    prefab: {fileID: 5348680261513356925, guid: 31b5742b70ec57f47965d3ec8e101f5d,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bEnv
+    fullName: Envelope (blue)
+    prefab: {fileID: 3441595652119608636, guid: ec76d109ed0663c42a5540f8fd76213b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gEnv
+    fullName: Envelope (green)
+    prefab: {fileID: 3441595652119608636, guid: ec76d109ed0663c42a5540f8fd76213b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yEnv
+    fullName: Envelope (yellow)
+    prefab: {fileID: 3441595652119608636, guid: ec76d109ed0663c42a5540f8fd76213b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oEnv
+    fullName: Envelope (orange)
+    prefab: {fileID: 3441595652119608636, guid: ec76d109ed0663c42a5540f8fd76213b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pEnv
+    fullName: Envelope (pink)
+    prefab: {fileID: 3441595652119608636, guid: ec76d109ed0663c42a5540f8fd76213b,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bStp
+    fullName: Stapler (blue)
+    prefab: {fileID: 4523713981988973496, guid: 219e08427a3a8254ebbf276e9125d7e9,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gStp
+    fullName: Stapler (green)
+    prefab: {fileID: 4523713981988973496, guid: 219e08427a3a8254ebbf276e9125d7e9,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yStp
+    fullName: Stapler (yellow)
+    prefab: {fileID: 4523713981988973496, guid: 219e08427a3a8254ebbf276e9125d7e9,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oStp
+    fullName: Stapler (orange)
+    prefab: {fileID: 4523713981988973496, guid: 219e08427a3a8254ebbf276e9125d7e9,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pStp
+    fullName: Stapler (pink)
+    prefab: {fileID: 4523713981988973496, guid: 219e08427a3a8254ebbf276e9125d7e9,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bRlr
+    fullName: Ruler (blue)
+    prefab: {fileID: 7087888403919580717, guid: 8d950b38bacf68048b9e23d9196c09a3,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gRlr
+    fullName: Ruler (green)
+    prefab: {fileID: 7087888403919580717, guid: 8d950b38bacf68048b9e23d9196c09a3,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yRlr
+    fullName: Ruler (yellow)
+    prefab: {fileID: 7087888403919580717, guid: 8d950b38bacf68048b9e23d9196c09a3,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oRlr
+    fullName: Ruler (orange)
+    prefab: {fileID: 7087888403919580717, guid: 8d950b38bacf68048b9e23d9196c09a3,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pRlr
+    fullName: Ruler (pink)
+    prefab: {fileID: 7087888403919580717, guid: 8d950b38bacf68048b9e23d9196c09a3,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bNbk
+    fullName: Notebook (blue)
+    prefab: {fileID: 1678351983508114818, guid: 7e78e35904a607a4cbee60001d4b66cb,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gNbk
+    fullName: Notebook (green)
+    prefab: {fileID: 1678351983508114818, guid: 7e78e35904a607a4cbee60001d4b66cb,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yNbk
+    fullName: Notebook (yellow)
+    prefab: {fileID: 1678351983508114818, guid: 7e78e35904a607a4cbee60001d4b66cb,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oNbk
+    fullName: Notebook (orange)
+    prefab: {fileID: 1678351983508114818, guid: 7e78e35904a607a4cbee60001d4b66cb,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pNbk
+    fullName: Notebook (pink)
+    prefab: {fileID: 1678351983508114818, guid: 7e78e35904a607a4cbee60001d4b66cb,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bScs
+    fullName: Scissors (blue)
+    prefab: {fileID: 3092713648908122844, guid: cf80ce0ca6c1fa84f91b5e5205ab6ffc,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gScs
+    fullName: Scissors (green)
+    prefab: {fileID: 3092713648908122844, guid: cf80ce0ca6c1fa84f91b5e5205ab6ffc,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yScs
+    fullName: Scissors (yellow)
+    prefab: {fileID: 3092713648908122844, guid: cf80ce0ca6c1fa84f91b5e5205ab6ffc,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oScs
+    fullName: Scissors (orange)
+    prefab: {fileID: 3092713648908122844, guid: cf80ce0ca6c1fa84f91b5e5205ab6ffc,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pScs
+    fullName: Scissors (pink)
+    prefab: {fileID: 3092713648908122844, guid: cf80ce0ca6c1fa84f91b5e5205ab6ffc,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 0.7019608, b: 1, a: 1}
+    shortName: bPsp
+    fullName: Pushpin (blue)
+    prefab: {fileID: 9039734221482416600, guid: 2e57f467f81f94b43be24168544747ff,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 0, g: 1, b: 0.0627451, a: 1}
+    shortName: gPsp
+    fullName: Pushpin (green)
+    prefab: {fileID: 9039734221482416600, guid: 2e57f467f81f94b43be24168544747ff,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.96862745, b: 0, a: 1}
+    shortName: yPsp
+    fullName: Pushpin (yellow)
+    prefab: {fileID: 9039734221482416600, guid: 2e57f467f81f94b43be24168544747ff,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0.5686275, b: 0, a: 1}
+    shortName: oPsp
+    fullName: Pushpin (orange)
+    prefab: {fileID: 9039734221482416600, guid: 2e57f467f81f94b43be24168544747ff,
+      type: 3}
+    prefabChildOverlay: Overlay
+  - color: {r: 1, g: 0, b: 0.9372549, a: 1}
+    shortName: pPsp
+    fullName: Pushpin (pink)
+    prefab: {fileID: 9039734221482416600, guid: 2e57f467f81f94b43be24168544747ff,
       type: 3}
     prefabChildOverlay: Overlay
   rackVariations:
@@ -559,7 +793,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 0a775af4995edea4d9f3d16a998c5c34, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ac83f8459f5b2284cb0ade0b3eab35f5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -578,7 +812,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 863475054}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -3.5, z: 0}
+  m_LocalPosition: {x: 0, y: -2.5, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -614,7 +848,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1.28, y: 0.84}
+    oldSize: {x: 2.27, y: 1.28}
     newSize: {x: 1.28, y: 0.84}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
