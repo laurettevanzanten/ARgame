@@ -1,0 +1,4 @@
+insert into sessions values(0, 0, 42, '{"session": 1, "ts": 42, "items": [{"x": 3, "y":5}]}');
+insert into sessions values(3938, 1, 271, '{"session": 2, "ts": 271, "items": [{"x": 3, "y":5}, {"x": 1, "y":2}]}');
+
+insert into users values(0, "admin", "foo");

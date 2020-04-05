@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
 public class GameStateComponent : MonoBehaviour
 {
     public static GameStateComponent Instance { get; set; }
@@ -25,7 +24,7 @@ public class GameStateComponent : MonoBehaviour
 
     public int CompletedOrders => CollectedItems.Count -1;
     public GameObject[] RackObjects { get; private set; }
-    public List<List<string>> CollectedItems { get; private set; } = new List<List<string>>();
+    public List<List<CollectedItem>> CollectedItems { get; private set; } = new List<List<CollectedItem>>();
 
     public List<List<OrderProperties>> Orders { get; private set; }
     public int CurrentOrderListIndex { get; private set; } = 0;
@@ -34,6 +33,8 @@ public class GameStateComponent : MonoBehaviour
     public int CurrentOrderLine { get; private set; } = 0;
 
     private float startTime;
+
+    private WebCom webComponent;
 
     public void Start()
     {
@@ -44,14 +45,21 @@ public class GameStateComponent : MonoBehaviour
 
         if (rackSetup == null)
         {
-            CreateRandomRacks();
+            SetupRacks(null, CreateRandomItemVariation);
         }
         else
         {
-            SetupRacks(CSVParser.ParseGrid(rackSetup, (value, x, y) => value));
+            SetupRacks(CSVParser.ParseGrid(rackSetup, (value, x, y) => value), CreateItemVariationFromItemGrid);
         }
 
-        CollectedItems.Add(new List<string>());
+        CollectedItems.Add(new List<CollectedItem>());
+
+        webComponent = GetComponent<WebCom>();
+
+        if (webComponent == null)
+        {
+            Debug.LogWarning("Cannot resolve webComponent");
+        }
     }
     
 
@@ -80,32 +88,46 @@ public class GameStateComponent : MonoBehaviour
         return ResolveItemName(properties.rackLetter - rackLabelPrefix, properties.x, properties.y);
     }
 
-    public void OnItemCollected(string itemLabel)
+    public void OnItemCollected(ItemBehaviour itemLabel)
     {
         if (CurrentOrderListIndex < CollectedItems.Count)
         {
-            CollectedItems[CurrentOrderListIndex].Add(itemLabel);
+            CollectedItems[CurrentOrderListIndex].Add(new CollectedItem()
+            {
+                pos = itemLabel.OriginCoordinate,
+                ts = (int) Time.time
+            });
         }
         else
         {
-            Debug.Log("item " + itemLabel + " went into the void...");
+            Debug.LogWarning("item " + itemLabel + " went into the void...");
         }
     }
 
     public void OnOrderCompleted()
     {
-        if (CurrentOrderListIndex < Orders.Count - 1)
+        if (CurrentOrderListIndex < Orders.Count)
         {
-            CollectedItems.Add(new List<string>());
+            if (webComponent != null)
+            {
+                webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1]);
+            }
+            else
+            {
+                Debug.LogWarning("no webcomponent defined, cannot send messages to server.");
+            }
+
+            CollectedItems.Add(new List<CollectedItem>());
             CurrentOrderLine = 0;
         }
-        else
+
+        CurrentOrderListIndex++;
+
+        if (CurrentOrderListIndex >= Orders.Count)
         {
             CurrentOrderLine = -1;
             Debug.Log("No more orders to collect...");
         }
-
-        CurrentOrderListIndex++;
     }
 
     public void OnNextOrderLine()
@@ -142,62 +164,41 @@ public class GameStateComponent : MonoBehaviour
         return "";
     }
 
-    private void SetupRacks(List<List<string>> grid)
+    private void CreateItemVariationFromItemGrid(GameObject boxObject, List<List<string>> itemGrid, int x, int y)
     {
-        RackObjects = new GameObject[rackCount];
+        var provider = boxObject.GetComponent<ItemProvider>();
+        var itemName = ResolveItemVaration(itemGrid, x, y);
 
-        var basePosition = transform.position - (rackCount / 2) * rackSpacing;
-        var rackLabel = char.ToUpper(rackLabelPrefix);
+        provider.OriginCoordinate = new Vector2Int(x, y);
 
-        for (int i = 0; i < rackCount; i++)
+        if (string.IsNullOrEmpty(itemName))
         {
-            var rackObj = Instantiate(rackVariations[UnityEngine.Random.Range(0, rackVariations.Length)]);
-            var rackComponent = rackObj.GetComponent<RackComponent>();
+            provider.itemSource = ItemSourceType.None;
+        }
+        else
+        {
+            var itemVaration = itemVariations.FirstOrDefault(variation => variation.shortName == itemName);
 
-            rackObj.transform.parent = transform;
-            rackObj.transform.position = basePosition + i * rackSpacing;
-
-            rackObj.name = "Rack-" + rackLabel;
-
-            rackComponent.labelFormat = rackLabel + "{0}.{1}";
-
-            var boxObjects = rackComponent.FillRack(rackComponent.width, rackComponent.height);
-
-            for (int x = 0; x < rackComponent.width; x++)
+            if (itemVaration == null)
             {
-                for (int y = 0; y < rackComponent.height; y++)
-                {
-                    var provider = boxObjects[x][y].GetComponent<ItemProvider>();
-                    var itemName = ResolveItemVaration(grid, x + rackComponent.width * i, y);
-
-                    if (string.IsNullOrEmpty(itemName))
-                    {
-                        provider.itemSource = ItemSourceType.None;
-                    }
-                    else
-                    {
-                        var itemVaration = itemVariations.FirstOrDefault(variation => variation.shortName == itemName);
-
-                        if (itemVaration == null)
-                        {
-                            provider.itemSource = ItemSourceType.None;
-                        }
-                        else
-                        {
-                            provider.itemVariation = itemVaration;
-                            provider.itemSource = ItemSourceType.Variation;
-                        }
-                    }
-                }
+                provider.itemSource = ItemSourceType.None;
             }
-
-            RackObjects[i] = rackObj;
-
-            rackLabel++;
+            else
+            {
+                provider.itemVariation = itemVaration;
+                provider.itemSource = ItemSourceType.Variation;
+            }
         }
     }
 
-    private void CreateRandomRacks()
+    private void CreateRandomItemVariation(GameObject boxObject, List<List<string>> itemGrid, int x, int y)
+    {
+        var provider = boxObject.GetComponent<ItemProvider>();
+        provider.itemVariation = itemVariations[UnityEngine.Random.Range(0, itemVariations.Length)];
+        provider.itemSource = ItemSourceType.Variation;
+    }
+
+    private void SetupRacks(List<List<string>> itemGrid, Action<GameObject, List<List<string>>,  int, int> initializeBoxObject)
     {
         RackObjects = new GameObject[rackCount];
 
@@ -222,9 +223,7 @@ public class GameStateComponent : MonoBehaviour
             {
                 for (int y = 0; y < rackComponent.height; y++)
                 {
-                    var provider = boxObjects[x][y].GetComponent<ItemProvider>();
-                    provider.itemVariation = itemVariations[UnityEngine.Random.Range(0, itemVariations.Length)];
-                    provider.itemSource = ItemSourceType.Variation;
+                    initializeBoxObject(boxObjects[x][y], itemGrid, x + rackComponent.width * i, y);
                 }
             }
 

@@ -23,6 +23,8 @@ public class ItemProvider : MonoBehaviour
     private float mouseDownTime = 0;
     private bool isMouseOnProvider = false;
 
+    public Vector2Int OriginCoordinate { get; set; }
+
     void Start()
     {
         isMouseDown = false;
@@ -50,11 +52,13 @@ public class ItemProvider : MonoBehaviour
 
                 if (spawnedItem != null)
                 {
+                    var itemProperties = spawnedItem.GetComponent<ItemBehaviour>();
                     var worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
                     worldPosition.z = gameObject.transform.position.z;
 
                     spawnedItem.transform.position = worldPosition;
+                    itemProperties.OriginCoordinate = OriginCoordinate;
                 }
 
                 isMouseDown = false;

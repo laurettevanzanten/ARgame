@@ -32,17 +32,16 @@ public class ItemConsumer : MonoBehaviour
         if (colliderObject.tag == targetTag)
         {
             var jointControl = colliderObject.GetComponent<TargetJointControl>();
+            var itemBehaviour = colliderObject.GetComponent<ItemBehaviour>();
+
+            if (itemBehaviour != null && jointControl != null && !jointControl.IsTrackingMouse)
+            {
+                gameState.OnItemCollected(itemBehaviour);
+            }
 
             if (jointControl != null && !jointControl.IsTrackingMouse)
             {
                 GameObject.Destroy(colliderObject);
-            }
-
-            var itemBehaviour = colliderObject.GetComponent<ItemBehaviour>();
-
-            if (itemBehaviour != null)
-            {
-                gameState.OnItemCollected(itemBehaviour.Label);
             }
         }
     }
