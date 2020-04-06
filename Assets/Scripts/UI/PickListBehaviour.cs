@@ -1,11 +1,18 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System.Text;
 
 public class PickListBehaviour : MonoBehaviour
 {
+    public int headerFontSize = 32;
+    public int itemFontSize = 24;
+
+    public string headerColor = "#000000";
+    public string selectedItemOrderColor = "#42EDFF";
+    public string itemOrderColor = "#A0A0A0";
+
+
     private int orderListIndex = -1;
     private int orderLineIndex = -1;
     private TextMeshProUGUI textComponent;
@@ -45,27 +52,18 @@ public class PickListBehaviour : MonoBehaviour
                 var orderProperties = orderList[i];
                 var item = gameState.ResolveItemName(orderProperties);
 
-                if (i == gameState.CurrentOrderLine)
-                {
-                    builder.Append("<color=#42EDFF><u>");
-                }
-                else
-                {
-                    builder.Append("<color=#A0A0A0>");
-                }
+
+                builder.Append("<color=");
+                builder.Append(i == gameState.CurrentOrderLine ? selectedItemOrderColor : itemOrderColor);
+                builder.Append(">");
 
                 builder.Append(orderProperties.ToString(item));
-
-                if (i == gameState.CurrentOrderLine)
-                {
-                    builder.Append("</u>");
-                }
 
                 builder.Append("\n");
             }
 
-            textComponent.text = "<size=32><u>Pick list:</u></size>\n"
-                + "<size=24>" + builder.ToString() + "</size>";
+            textComponent.text = "<color=" + headerColor + "><size=" + headerFontSize + "><u>Pick list:</u></size>\n"
+                + "<size=" + itemFontSize + ">" + builder.ToString() + "</size>";
 
         }
     }

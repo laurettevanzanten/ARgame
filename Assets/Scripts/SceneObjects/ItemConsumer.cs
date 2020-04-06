@@ -8,9 +8,7 @@ using UnityEngine;
 public class ItemConsumer : MonoBehaviour
 {
     public string targetTag = "Item";
-
     private GameStateComponent gameState;
-
 
     public void Start()
     {

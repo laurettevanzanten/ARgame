@@ -20,6 +20,8 @@ public class GameStateComponent : MonoBehaviour
     public Vector3 rackSpacing = Vector3.right* 5;
     public char rackLabelPrefix = 'A';
 
+    public SoundList soundList;
+
     public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - (Time.time - startTime));
 
     public int CompletedOrders => CollectedItems.Count -1;
@@ -35,6 +37,7 @@ public class GameStateComponent : MonoBehaviour
     private float startTime;
 
     private WebCom webComponent;
+    private AudioSource audioSource;
 
     public void Start()
     {
@@ -60,6 +63,9 @@ public class GameStateComponent : MonoBehaviour
         {
             Debug.LogWarning("Cannot resolve webComponent");
         }
+
+        audioSource = GetComponent<AudioSource>();
+
     }
     
 
@@ -97,6 +103,8 @@ public class GameStateComponent : MonoBehaviour
                 pos = itemLabel.OriginCoordinate,
                 ts = (int) Time.time
             });
+
+            TryToPlaySound(soundList.itemCollected);
         }
         else
         {
@@ -117,6 +125,7 @@ public class GameStateComponent : MonoBehaviour
                 Debug.LogWarning("no webcomponent defined, cannot send messages to server.");
             }
 
+            TryToPlaySound(soundList.nextOrder);
             CollectedItems.Add(new List<CollectedItem>());
             CurrentOrderLine = 0;
         }
@@ -146,6 +155,16 @@ public class GameStateComponent : MonoBehaviour
             {
                 CurrentOrderLine = 0;
             }
+
+            TryToPlaySound(soundList.nextOrderLine);
+        }
+    }
+
+    private void TryToPlaySound(AudioClip sound)
+    {
+        if (audioSource != null && sound != null )
+        {
+            audioSource.PlayOneShot(sound);
         }
     }
 
