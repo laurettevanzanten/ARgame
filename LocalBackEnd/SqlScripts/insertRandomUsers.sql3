@@ -1,0 +1,10 @@
+insert into users values(1, "user1", "pwd1");
+insert into users values(2, "user2", "pwd2");
+insert into users values(3, "user3", "pwd3");
+insert into users values(4, "user4", "pwd4");
+insert into users values(5, "user5", "pwd5");
+insert into users values(6, "user6", "pwd6");
+insert into users values(7, "user7", "pwd7");
+insert into users values(8, "user8", "pwd8");
+insert into users values(9, "user9", "pwd9");
+insert into users values(10, "user10", "pwd10");

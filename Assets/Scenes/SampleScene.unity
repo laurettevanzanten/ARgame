@@ -594,6 +594,8 @@ MonoBehaviour:
   userName: admin
   password: foo
   sessionId: 0
+  timeout: 60
+  sendInterval: 1
 --- !u!82 &475437818
 AudioSource:
   m_ObjectHideFlags: 0

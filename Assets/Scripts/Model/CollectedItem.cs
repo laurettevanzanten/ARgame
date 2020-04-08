@@ -11,5 +11,10 @@ public class CollectedItem
     {
         return "{ \"x\":" + pos.x + ", \"y\":" + pos.y + ", \"ts\": " + ((int)ts).ToString() + "}";
     }
+
+    public override string ToString()
+    {
+        return "x:" + pos.x + ", y:" + pos.y + ", ts: " + ((int)ts).ToString();
+    }
 }
 
