@@ -96,6 +96,7 @@ GameObject:
   - component: {fileID: 3498030792351528305}
   - component: {fileID: 6321613259053234853}
   - component: {fileID: 5241663293087156264}
+  - component: {fileID: 6089798490067948168}
   m_Layer: 9
   m_Name: Psp
   m_TagString: Item
@@ -234,8 +235,8 @@ CapsuleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
-  m_Size: {x: 0.2, y: 1.28}
+  m_Offset: {x: -0.02, y: -0.4}
+  m_Size: {x: 0.15, y: 0.4}
   m_Direction: 0
 --- !u!114 &5241663293087156264
 MonoBehaviour:
@@ -249,3 +250,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3460f01bc9b9eb74cad93a2fa595c83f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!70 &6089798490067948168
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9039734221482416600}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0.1}
+  m_Size: {x: 0.9, y: 0.9}
+  m_Direction: 0
