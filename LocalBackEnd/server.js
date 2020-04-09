@@ -4,6 +4,8 @@ const cors = require('cors');
 const exec = require('child_process').exec;
 const spawn = require('child_process').spawn;
 const fs = require('fs');
+var seedrandom = require('seedrandom');
+
 
 // Create Express app
 const app = express();
@@ -24,8 +26,11 @@ var _insertQueue = {};
 var _userTable = {};
 var _uniqueUserRequests = 0;
 var _isFlushRequestQueueScheduled = false;
+var _tokens = {};
 
-// setup Cross Domain calls
+/*
+ * setup Cross Domain calls
+ */
 app.use(cors({
   origin: function(origin, callback){
     // allow requests with no origin 
@@ -39,10 +44,60 @@ app.use(cors({
   }
 }));
 
-
-// Shows a page when browsing to index.html
+/*
+ * Sends a default page
+ */
 app.get('/', (req, res) => res.send('Laurette - Server, thesis v0.001'));
 
+/*
+ * Logs the user in based off a user and password (plain text -- we're _really_ not expecting the game to
+ * be hacked) 
+ */
+app.get('/login', jsonParser, (req, res) => {
+	getUserId(req.body.user, req.body.password, (id, userName) => {
+		if (id === -1) {
+			sendReply(res, 0, -1, "user or password not found");
+		} else  {
+			var seed = id + "-" + req.body.user + "-" + req.body.password + "-" + new Date().getMilliseconds();
+			var rng = seedrandom(seed);
+			var token = "";
+
+			for (var i = 0; i < 8; i++) {
+				token += Math.floor(rng() * 10);	
+			}
+
+			_tokens[token] = new Date();
+
+			getMaxSession(id, (maxSession) => {
+				if (maxSession >= 0) {
+					getMaxTimeStamp(id, maxSession, (maxTimeStamp) => {
+						if (maxTimeStamp >= 0) {
+							sendReply(res, 0, 0, token + "," + maxSession + "," + maxTimeStamp );
+						} else {
+							sendReply(res, 0, 0, token );
+						}		
+					});
+				} else {
+					sendReply(res, 0, 0, token );
+				}
+			});
+		}
+	});
+});
+
+/*
+ * Logs the user out
+ */
+app.put('/logout', jsonParser, (req, res) => {
+	if (_tokens[req.body.token]) {
+		delete _tokens[req.body.token];
+	} 
+
+	res.end();
+});
+
+
+// deprecated -- keeping it here in case we do need to move to a file based apporach 
 app.post('/post-session-fs', jsonParser, function (req, res) {
 	filePath = __dirname + "/" + req.body.user + '.txt';
 	fs.appendFile(filePath, JSON.stringify(req.body), function() {
@@ -133,8 +188,7 @@ function flushInsertQueue() {
 	
 	var callbackCount = valuesCollection.length;
 
-	insertValues(valuesCollection, (exitCode, err) =>
-	{		
+	insertValues(valuesCollection, (exitCode, err) => {		
 		for (var id in _insertQueue) {
 			if (_insertQueue.hasOwnProperty(id)) {
 				var msgList = _insertQueue[id];
@@ -142,12 +196,10 @@ function flushInsertQueue() {
 				for (var i = 0; i < msgList.length; i++) {
 					var res = msgList[i].response;
 					var req = msgList[i].request;
-					if (err)
-					{
+					
+					if (err) {
 						sendReply(res, req.body.timeStamp, err,  "Err: " + err);
-					}
-					else 
-					{
+					} else {
 						sendReply(res, req.body.timeStamp, 0,  "Ok");
 					}
 
@@ -220,6 +272,26 @@ function getUserId(name, password, callback)
 		callback(!stdOut  ? -1 : parseInt(stdOut), name  + "-" + password);
 	} );
 }
+
+function getMaxSession(userId, callback)  {
+	var sqlCall = sqlExec 
+		+ '"select max(session) from sessions where userId = ' + userId + ';';
+
+	exec(sqlCall, (err, stdOut, stdErr) =>{
+		callback(!stdOut  ? -1 : parseInt(stdOut));
+	} );
+}
+
+function getMaxTimeStamp(userId, sessionId, callback)  {
+	var sqlCall = sqlExec 
+		+ '"select max(timeStamp) from sessions where userId= ' + userId + ' and session=' + sessionId + ';';
+
+	exec(sqlCall, (err, stdOut, stdErr) =>{
+		callback(!stdOut  ? -1 : parseInt(stdOut));
+	} );
+}
+
+
 
 // Start the Express server
 app.listen(3000, () => console.log('Server running on port 3000!'));
