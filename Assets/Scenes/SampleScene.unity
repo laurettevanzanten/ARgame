@@ -562,8 +562,8 @@ MonoBehaviour:
   rackLabelPrefix: 65
   soundList:
     itemCollected: {fileID: 8300000, guid: 489053f73764df1459bd80017ba752dc, type: 3}
-    nextOrder: {fileID: 8300000, guid: 62baae1bb6b4ce444a17d1720779e04a, type: 3}
-    nextOrderLine: {fileID: 8300000, guid: 62baae1bb6b4ce444a17d1720779e04a, type: 3}
+    nextOrder: {fileID: 8300000, guid: 219a753f96e180b4d9a9ee92c5d1993d, type: 3}
+    nextOrderLine: {fileID: 8300000, guid: 219a753f96e180b4d9a9ee92c5d1993d, type: 3}
 --- !u!4 &475437816
 Transform:
   m_ObjectHideFlags: 0
@@ -573,7 +573,7 @@ Transform:
   m_GameObject: {fileID: 475437814}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.5, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -608,7 +608,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.234
+  m_Volume: 0.764
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -932,8 +932,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 863475054}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2.5, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 1}
+  m_LocalPosition: {x: 1.3, y: -3, z: 0}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
@@ -1472,7 +1472,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<u>Pick List:</u><size=30>\n  A1.1 - pen, 5\n  B2.3 - book, 1\n  C5.2
+  m_text: "<u>Pick List:</u><size=25>\n  A1.1 - pen, 5\n  B2.3 - book, 1\n  C5.2
     - Marker (blue), 10\n</size>\n\n\n\n\n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -1547,7 +1547,7 @@ MonoBehaviour:
     spaceCount: 27
     wordCount: 18
     linkCount: 0
-    lineCount: 11
+    lineCount: 10
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -1585,8 +1585,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85d0168879d81104a990dca10dcaa86f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  headerFontSize: 32
-  itemFontSize: 24
+  headerFontSize: 25
+  itemFontSize: 20
   headerColor: '#000000'
   selectedItemOrderColor: '#42EDFF'
   itemOrderColor: '#A0A0A0'
