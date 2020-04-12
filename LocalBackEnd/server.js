@@ -4,7 +4,7 @@ const cors = require('cors');
 const exec = require('child_process').exec;
 const spawn = require('child_process').spawn;
 const fs = require('fs');
-var seedrandom = require('seedrandom');
+const seedrandom = require('seedrandom');
 
 
 // Create Express app
@@ -20,13 +20,43 @@ const whitleListDomain = ['http://localhost:8080',
 
 
 const flushTimeout = 1000;
+// token can only live for 5 minutes
+const maxTokenAge = 60 * 5;
 
-var _requestQueue = [];
-var _insertQueue = {};
-var _userTable = {};
-var _uniqueUserRequests = 0;
-var _isFlushRequestQueueScheduled = false;
-var _tokens = {};
+// error which occurs when the client didn't provide a request body or invalid token
+const invalidBodyOrToken = -5;
+// error which occurs if the user is inactive for more than maxTokenAge 
+const accessTimeOutError = -6;
+
+var _writeQueue = [];
+var _readQueue = [];
+var _activeQueue;
+
+var _userCredentials = {};
+
+class WebOperation {
+	constructor(name, request, response) {
+		this.name = name;
+		this.request = request;
+		this.response = response;
+	}
+}
+
+class UserCredentials {
+	constructor(id, token, date) {
+		this.id = id;
+		this.token = token;
+		this.date = date;
+	}
+}
+
+class LoginResponse {
+	constructor(token, session, timeStamp){
+		this.token = token;
+		this.session = session;
+		this.timeStamp = timeStamp;
+	}
+}
 
 /*
  * setup Cross Domain calls
@@ -53,44 +83,16 @@ app.get('/', (req, res) => res.send('Laurette - Server, thesis v0.001'));
  * Logs the user in based off a user and password (plain text -- we're _really_ not expecting the game to
  * be hacked) 
  */
-app.get('/login', jsonParser, (req, res) => {
-	getUserId(req.body.user, req.body.password, (id, userName) => {
-		if (id === -1) {
-			sendReply(res, 0, -1, "user or password not found");
-		} else  {
-			var seed = id + "-" + req.body.user + "-" + req.body.password + "-" + new Date().getMilliseconds();
-			var rng = seedrandom(seed);
-			var token = "";
-
-			for (var i = 0; i < 8; i++) {
-				token += Math.floor(rng() * 10);	
-			}
-
-			_tokens[token] = new Date();
-
-			getMaxSession(id, (maxSession) => {
-				if (maxSession >= 0) {
-					getMaxTimeStamp(id, maxSession, (maxTimeStamp) => {
-						if (maxTimeStamp >= 0) {
-							sendReply(res, 0, 0, token + "," + maxSession + "," + maxTimeStamp );
-						} else {
-							sendReply(res, 0, 0, token );
-						}		
-					});
-				} else {
-					sendReply(res, 0, 0, token );
-				}
-			});
-		}
-	});
+app.post('/login', jsonParser, (req, res) => {
+	_readQueue.push( new WebOperation("login",  req,  res ))
 });
 
 /*
  * Logs the user out
  */
-app.put('/logout', jsonParser, (req, res) => {
-	if (_tokens[req.body.token]) {
-		delete _tokens[req.body.token];
+app.post('/logout', jsonParser, (req, res) => {
+	if (_userCredentials[req.body.token]) {
+		delete _userCredentials[req.body.token];
 	} 
 
 	res.end();
@@ -110,108 +112,157 @@ app.post('/post-session-fs', jsonParser, function (req, res) {
  */
 app.post('/post-session-db', jsonParser, function (req, res) {
 
-	if (req && req.body) {
-		_requestQueue.push({index: _requestQueue.length, request: req, response: res});
+	var credentials  = _userCredentials[req.body.token];
+	if (req && req.body && credentials) {
+		// get the age of the token and see if it is still valid
+		var now = new Date();
+		var credentialsAge = (now.getTime() - credentials.date.getTime()) / 1000;
+		
+		if (credentialsAge < maxTokenAge) {
+			// update the token's life
+			_userCredentials[req.body.token].date = now;
+			_writeQueue.push(new WebOperation("insert-order", req, res));
 
-		if ( !_isFlushRequestQueueScheduled) {
-			_isFlushRequestQueueScheduled = true;
-			setTimeout(flushRequestQueue, flushTimeout);
-		}		
+		} else {
+			sendReply(res, -1, accessTimeOutError, "token is no longer valid.");	
+			delete _userCredentials[req.body.token];
+		}
+	} else {
+		sendReply(res, -1, invalidBodyOrToken, "invalid request or token provided.");
 	}
+
 });
 
-function flushRequestQueue()
-{
-	_userTable = {};
-	_insertQueue = {};
+function updateQueues() {
 
-	// combine all messages from a single user
-	for (var i = 0; i < _requestQueue.length; i++) {
-		var key = _requestQueue[i].request.body.user + "-" + _requestQueue[i].request.body.password;
-		
-		if (!_userTable.hasOwnProperty(key)) {
-			_userTable[key] = [];
-			_uniqueUserRequests++;
-		}
-		
-		_userTable[key].push(_requestQueue[i]);
+	if (_activeQueue === _readQueue) {
+		var temp = _readQueue;
+		_readQueue = [];
+		flushReadQueue(temp, () => {
+			_activeQueue = _writeQueue;
+			setTimeout(updateQueues, 1000 );
+		});
+	} else {
+		var temp = _writeQueue;
+		_writeQueue = [];
+		flushWriteQueue(temp, () => {
+			_activeQueue = _readQueue;
+			setTimeout(updateQueues, 1000 );
+		});
 	}
+}
 
-	for (var name in _userTable) {
-		if (_userTable.hasOwnProperty(name)) {
+function flushReadQueue(queue, onCompleteCallback) {
+
+	if (queue.length > 0) {
+		var outstandingOperations = queue.length;
+
+		for (var i = 0; i < queue.length; i++) {
+			const request = queue[i].request;
+			const response = queue[i].response;
 			
-			var msgList = _userTable[name]; 
-			var msg = msgList[0];
-
-			getUserId(msg.request.body.user,msg.request.body.password, (id, userName) => {
+			login(request.body.user, request.body.password, (errCode, message) => {
 				
-				if (id >= 0) {
-					_insertQueue[id] = _userTable[userName];
+				if (errCode == 0) {
+					response.send(message);
+				} else {
+					sendReply(response, 0, errCode, message);
 				}
-				else {
-					sendReply(msg.response, -1, "user or password not found");
-				}
+				outstandingOperations--;
 
-				_uniqueUserRequests--;
-
-				if (_uniqueUserRequests == 0) {
-					if (Object.keys(_insertQueue).length > 0) {					
-						flushInsertQueue();
-					}
-					else {
-						_isFlushRequestQueueScheduled = false;
-					} 
-
+				if (outstandingOperations <= 0) {
+					onCompleteCallback();
 				}
 			});
 		}
+	} else {
+		onCompleteCallback();
 	}
 
-	_requestQueue = [];
 }
 
-
-function flushInsertQueue() {
-	var valuesCollection = [];
-		
-	for (var id in _insertQueue) {
-		if (_insertQueue.hasOwnProperty(id)) {
-			var msgList = _insertQueue[id];
-
-			for (var i = 0; i < msgList.length; i++) {
-				var msg = msgList[i].request.body;
-				var itemList = JSON.stringify(msg.items);
-				valuesCollection.push("(" + id + "," + msg.sessionId + "," + msg.timeStamp + ",'" + itemList + "')");
-			}
-		}
+function flushWriteQueue(queue, onCompleteCallback) {
+	if (queue.length == 0) {
+		onCompleteCallback();
 	}
-	
-	var callbackCount = valuesCollection.length;
+	else {
+		var valuesCollection = [];
+		
+		// combine all insert operations so we can do with only one insert call
+		for (var i = 0; i < queue.length; i++) {
+			var msgBody =  queue[i].request.body;
+			var itemList = JSON.stringify(msgBody.items);
+			var credentials = _userCredentials[msgBody.token];
+			valuesCollection.push("(" + credentials.id + "," + msgBody.sessionId + "," + msgBody.timeStamp + ",'" + itemList + "')");
+		}
 
-	insertValues(valuesCollection, (exitCode, err) => {		
-		for (var id in _insertQueue) {
-			if (_insertQueue.hasOwnProperty(id)) {
-				var msgList = _insertQueue[id];
+		var outstandingOperations = queue.length;
 
-				for (var i = 0; i < msgList.length; i++) {
-					var res = msgList[i].response;
-					var req = msgList[i].request;
-					
-					if (err) {
-						sendReply(res, req.body.timeStamp, err,  "Err: " + err);
-					} else {
-						sendReply(res, req.body.timeStamp, 0,  "Ok");
-					}
+		insertValues(valuesCollection, (exitCode, err) => {		
+			for (var i = 0; i < queue.length; i++) {
+				var msg = queue[i];
 
-					callbackCount--;
-					if (callbackCount == 0) {
-						_isFlushRequestQueueScheduled = false;
-					}
+				var res = msg.response;
+				var req = msg.request;
+				
+				if (err) {
+					sendReply(res, req.body.timeStamp, err,  "Err: " + err);
+				} else {
+					sendReply(res, req.body.timeStamp, 0,  "Ok");
+				}
+
+				outstandingOperations--;
+
+				if (outstandingOperations == 0) {
+					onCompleteCallback();
 				}
 			}
+		});
+	}
+}
+
+/*
+ * Login to the back-end using the given user name and password
+ */
+function login(user, password, callback) {
+
+	getUserId(user, password, (id, userName) => {
+		if (id === -1) {
+			callback( -1, "user or password not found");
+		} else  {
+			const token = generateToken(id, user, password);
+
+			_userCredentials[token] = new UserCredentials(id, token, new Date());
+
+			getMaxSession(id, (maxSession) => {
+				if (maxSession >= 0) {
+					getMaxTimeStamp(id, maxSession, (maxTimeStamp) => {
+						if (maxTimeStamp >= 0) {
+							callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimeStamp )));
+						} else {
+							callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
+						}		
+					});
+				} else {
+					callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )) );
+				}
+			});
 		}
 	});
 }
+
+
+function generateToken(id, user, password) {
+	var seed = id + "-" + user + "-" + password + "-" + new Date().getMilliseconds();
+	var rng = seedrandom(seed);
+	var token = "";
+
+	for (var i = 0; i < 8; i++) {
+		token += Math.floor(rng() * 10);	
+	}
+	return token;
+}
+
 
 
 /*
@@ -226,7 +277,6 @@ function sendReply(response, timeStamp, errorCode, message)
 /*
  * Insert the properties in a slot for the given user id.
  */
-
 function insertValues(valuesCollection, callback)
 {	
 	var child = spawn("sqlite3.exe", ["sessions.db"]);
@@ -235,8 +285,7 @@ function insertValues(valuesCollection, callback)
 		if (callback) 
 		{
 			callback(exitCode, null);
-		}
-		console.log("inserted values, sqlite3 exited with " + exitCode);
+		}		
 	});
 
 	child.on('error', (exitCode) => {
@@ -257,7 +306,6 @@ function insertValues(valuesCollection, callback)
 	child.stdin.write(".exit\n");
 	child.stdin.end();
 }
-
 
 /*
  * Returns the user id based on name and password. 
@@ -291,7 +339,9 @@ function getMaxTimeStamp(userId, sessionId, callback)  {
 	} );
 }
 
-
-
 // Start the Express server
 app.listen(3000, () => console.log('Server running on port 3000!'));
+
+// start flushing the read and write queues
+_activeQueue = _readQueue;
+setTimeout(updateQueues, 2000);

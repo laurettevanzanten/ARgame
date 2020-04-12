@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\MLA256\\Source\\Repos\\PostStressTest\\PostStressTest\\PostStressTest.csproj": {}
+    "C:\\Code\\unity\\Laurette-2D\\LocalBackEnd\\StressTest\\PostStressTest\\PostStressTest.csproj": {}
   },
   "projects": {
-    "C:\\Users\\MLA256\\Source\\Repos\\PostStressTest\\PostStressTest\\PostStressTest.csproj": {
+    "C:\\Code\\unity\\Laurette-2D\\LocalBackEnd\\StressTest\\PostStressTest\\PostStressTest.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\MLA256\\Source\\Repos\\PostStressTest\\PostStressTest\\PostStressTest.csproj",
+        "projectUniqueName": "C:\\Code\\unity\\Laurette-2D\\LocalBackEnd\\StressTest\\PostStressTest\\PostStressTest.csproj",
         "projectName": "PostStressTest",
-        "projectPath": "C:\\Users\\MLA256\\Source\\Repos\\PostStressTest\\PostStressTest\\PostStressTest.csproj",
+        "projectPath": "C:\\Code\\unity\\Laurette-2D\\LocalBackEnd\\StressTest\\PostStressTest\\PostStressTest.csproj",
         "packagesPath": "C:\\Users\\MLA256\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\MLA256\\Source\\Repos\\PostStressTest\\PostStressTest\\obj\\",
+        "outputPath": "C:\\Code\\unity\\Laurette-2D\\LocalBackEnd\\StressTest\\PostStressTest\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
