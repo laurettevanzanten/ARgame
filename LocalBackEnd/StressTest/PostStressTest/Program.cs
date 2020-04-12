@@ -13,84 +13,57 @@ using System.Collections.Generic;
 /// </summary>
 namespace PostStressTest
 {
-    public class Coordinate
-    {
-        public int x { get; set; }
-        public int y { get; set; }
-    }
+   
 
-    public class JsonMessage
-    {
-        public string user { get; set; }
-        public string password { get; set; }
-        public int sessionId { get; set; }
-        public int timeStamp { get; set; } 
-        public Coordinate[] items { get; set; }
-
-        public static JsonMessage GenerateRandomMessage(Random rng)
-        {
-            var id = rng.Next(1, 10);
-            return new JsonMessage()
-            {
-                user = "user" + id,
-                password = "pwd" + id,
-                items = GenerateRandomItems(rng),
-                sessionId = rng.Next(0, 2),
-                timeStamp = rng.Next(0, 900)
-            };
-        }
-
-        public static Coordinate[] GenerateRandomItems(Random rng)
-        {
-            var result = new Coordinate[rng.Next(1, 10)];
-
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = new Coordinate()
-                {
-                    x = rng.Next(0, 20),
-                    y = rng.Next(0, 5)
-                };
-            }
-
-            return result;
-        }
-    }
 
     class Program
     {
         static void Main(string[] args)
         {
-            var startTime = DateTime.Now;
-            var rng = new Random();
-            var taskList = new List<Task>();
+            const int maxUsers = 10;
+            var ioc = new IoC().Register<Random>(new Random());
+            var taskList = new List<(CancellationToken cancelToken, Task task)>();
 
-            using (var client = new HttpClient())
+            // create tasks for each user
+            for (int i = 0; i < maxUsers; i++)
             {
-                while ((DateTime.Now - startTime).TotalSeconds < 15.0f)
-                {
-                    var json = JsonSerializer.Serialize(JsonMessage.GenerateRandomMessage(rng));
-                    var task = Post(client, "http://localhost:3000/post-session-db", json);
+                var token = new CancellationToken();
+                var userName = "user" + (i + 1);
+                var password = "pwd" + (i + 1);
+                taskList.Add((token,
+                    Task.Run(async () =>
+                    {
+                        using (var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password))
+                        {
+                            agent.Start();
 
-                    taskList.Add(task);
-                    Thread.Sleep(rng.Next(1, 10));
+                            while (agent.Phase == StateMachine.StatePhase.Started)
+                            {
+                                agent.Update();
+                                await Task.Delay(100, token);
+                            }
+                        }
+                    })));
+            }
+
+            while (taskList.Count > 0)
+            {
+                for (int i = 0; i < taskList.Count;)
+                {
+                    var task = taskList[i].task;
+
+                    if (task.Status == TaskStatus.Running || task.Status == TaskStatus.WaitingForActivation)
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        taskList.RemoveAt(i);
+                    }
                 }
 
-                for (int i = 0; i < taskList.Count; i++ )
-                {
-                    if (taskList[i].Status != TaskStatus.RanToCompletion)
-                    {
-                        taskList[i].Wait();
-                    }
-                }   
+                Thread.Sleep(100);
             }
-        }
-
-        private static async Task<HttpResponseMessage> Post(HttpClient client, string uri, string json)
-        {
-            return await client.PostAsync( uri,
-                    new StringContent(json, Encoding.UTF8, "application/json"));
-        
         }
     }
 }
