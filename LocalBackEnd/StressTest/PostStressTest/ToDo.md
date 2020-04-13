@@ -1,5 +1,4 @@
 ﻿
-* Count messages sent
 * Add log out / log in 
 * Catch errors
 * Add error retry / fail
@@ -11,3 +10,4 @@
 [done] Set max time 
 [done] unify server replies
 [done] Add logging, back-end
+[done] Count messages sent

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PostStressTest.Messages
+﻿namespace PostStressTest.Messages
 {
     public class ServerResponse
     {
+        public int timeStamp { get; set; }
+        public string message { get; set; }
     }
 }

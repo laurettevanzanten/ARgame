@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Threading;
 using System.Collections.Generic;
-
+using PostStressTest.StateMachine;
+using System.Linq;
 
 /// <summary>
 /// Simple stress test program for the back-end server
@@ -14,7 +15,7 @@ using System.Collections.Generic;
 namespace PostStressTest
 {
    
-    public class AgentTaskList : List<(CancellationTokenSource cancelSource, Task task)>
+    public class AgentTaskList : List<(BasicAgent agent, CancellationTokenSource cancelSource, Task task)>
     {
     }
 
@@ -22,8 +23,8 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const int maxUsers = 1;
-            const int maxTimeSeconds = 10;
+            const int maxUsers = 10;
+            const int maxTimeSeconds = 30;
 
             var log = new Log()
             {
@@ -39,10 +40,13 @@ namespace PostStressTest
             RunAgentTasks(agentTaskList, maxTimeSeconds);
             StopAgentTasks(agentTaskList);
 
+            var messageCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.MessageCountId));
+            var ackCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.AckCountId));
+
             log.FlushCSV("stress-test.csv");
         }
 
-        private static AgentTaskList CreateTaskList(IoC ioc, int agentCount)
+        private static AgentTaskList CreateTaskList(IoC ioc, int agentCount, int taskIntervalMS = 10)
         {
             var agentTaskList = new AgentTaskList();
 
@@ -53,10 +57,13 @@ namespace PostStressTest
                 var token = cancelSource.Token;
                 var userName = "user" + (i + 1);
                 var password = "pwd" + (i + 1);
-                agentTaskList.Add((cancelSource,
+                var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password);
+
+                agentTaskList.Add((
+                    agent,
+                    cancelSource,
                     Task.Run(async () =>
                     {
-                        var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password);
                         using (agent)
                         {
                             agent.Start();
@@ -64,7 +71,7 @@ namespace PostStressTest
                             while (agent.Phase == StateMachine.StatePhase.Started)
                             {
                                 agent.Update();
-                                await Task.Delay(100, token);
+                                await Task.Delay(taskIntervalMS, token);
                             }
                         }
                         agent.Stop();
@@ -104,25 +111,21 @@ namespace PostStressTest
 
         static void StopAgentTasks(AgentTaskList agentTaskList)
         {
-            while (agentTaskList.Count > 0)
+            bool isRunning(Task t) => t.Status == TaskStatus.Running || t.Status == TaskStatus.WaitingForActivation;
+
+            while (agentTaskList.Any( tuple => isRunning(tuple.task)))
             {
-                for (int i = 0; i < agentTaskList.Count;)
+                for (int i = 0; i < agentTaskList.Count; i++)
                 {
                     var agentTask = agentTaskList[i].task;
                     
-                    if (agentTask.Status == TaskStatus.Running || agentTask.Status == TaskStatus.WaitingForActivation)
+                    if (isRunning(agentTask))
                     {
                         agentTaskList[i].cancelSource.Cancel();
-
-                        i++;
-                    }
-                    else
-                    {
-                        agentTaskList.RemoveAt(i);
                     }
                 }
 
-                Thread.Sleep(100);
+                Thread.Sleep(250);
             }
         }
     }
