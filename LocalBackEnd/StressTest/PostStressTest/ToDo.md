@@ -1,6 +1,4 @@
 ﻿
-* unify server replies
-* Add logging, back-end
 * Count messages sent
 * Add log out / log in 
 * Catch errors
@@ -11,3 +9,5 @@
 
 [done] Add logging - stress tests done
 [done] Set max time 
+[done] unify server replies
+[done] Add logging, back-end

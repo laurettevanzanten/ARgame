@@ -28,7 +28,7 @@ namespace PostStressTest
             var sendOrder = messageAgent.AddState<HttpMessageState>((s) =>
             {
                 s.Name = user + ", HttpMessageState::sendOrder";
-                s.Uri = "http://localhost:3000/post-session-db";
+                s.Uri = "http://localhost:3000/post-order";
                 s.Message = OrderMessage.GenerateRandomMessage(-1, rng);
                 s.SetupMessage = (msg) =>
                 {
@@ -89,9 +89,22 @@ namespace PostStressTest
             messageAgent.AddStateTransition(login, () =>
             {
                 // if failed to login, try again later
-                return (login.RequestException != null || !login.Response.IsSuccessStatusCode)
-                            ? delayTryRepeatLogin
-                            : (IState) sendOrder;
+                if (login.RequestException != null || login.Response == null)
+                {
+                    // exception has been logged - server might not be up, try later
+                    return delayTryRepeatLogin;
+
+                }
+                else if (!login.Response.IsSuccessStatusCode)
+                {                    
+                    log?.Put(OutputLevel.Error, login.Name, 
+                                    "login was not successfull, " + login.Response.ReasonPhrase);
+                    return delayTryRepeatLogin;
+                }
+                else
+                {
+                    return sendOrder;
+                }
             });
 
             // done waiting after a failed login, try login again
