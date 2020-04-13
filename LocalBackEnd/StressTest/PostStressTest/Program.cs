@@ -22,7 +22,7 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const int maxUsers = 10;
+            const int maxUsers = 1;
             const int maxTimeSeconds = 10;
 
             var log = new Log()
@@ -81,7 +81,8 @@ namespace PostStressTest
         {
             var startTime = DateTime.Now;
 
-            while (agentTaskList.Count > 0 && (DateTime.Now - startTime).TotalSeconds < maxTimeSeconds)
+            while (agentTaskList.Count > 0 
+                && (maxTimeSeconds < 0 || (DateTime.Now - startTime).TotalSeconds < maxTimeSeconds))
             {
                 for (int i = 0; i < agentTaskList.Count;)
                 {

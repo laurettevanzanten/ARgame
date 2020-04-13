@@ -1,40 +1,62 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
-const fs = require('fs');
 const seedrandom = require('seedrandom');
+
+const winston = require('winston');
+const { MESSAGE } = require("triple-beam");
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'laurette-server.log' }),
+    new winston.transports.Console({
+		//
+		// Possible to override the log method of the
+		// internal transports of winston@3.0.0.
+		//
+		log(info, callback) {
+			setImmediate(() => this.emit("logged", info));
+
+			console.log(info[MESSAGE]);
+		
+			if (callback) {
+				callback();
+			}
+		}
+	  })
+  ]
+});
+
 const sqlite3 = require('sqlite3').verbose();
 
+// open the database
 var sessionsDb = new sqlite3.Database("sessions.db");
 
 // Create Express app
 const app = express();
 
-const sqlExec = "sqlite3.exe sessions.db ";
-
 const jsonParser = bodyParser.json();
 
 const whitleListDomain = ['http://localhost:8080',
-							// http://alloweddomain.com' is aplaceholder
+							// http://alloweddomain.com' is a placeholder
 							'http://alloweddomain.com'];
 
 
-const flushTimeout = 1000;
+
 // token can only live for 5 minutes
 const maxTokenAge = 60 * 5;
+var _userCredentials = {};
 
-// error which occurs when the client didn't provide a request body or invalid token
-const invalidBodyOrToken = -5;
-// error which occurs if the user is inactive for more than maxTokenAge 
-const accessTimeOutError = -6;
+// how often do we flush the read/write quuees 
+const flushTimeout = 1000;
 
 var _writeQueue = [];
 var _readQueue = [];
+
 var _activeQueue;
 
-var _userCredentials = {};
 
 class WebOperation {
 	constructor(name, request, response) {
@@ -86,6 +108,7 @@ app.get('/', (req, res) => res.send('Laurette - Server, thesis v0.001'));
  * be hacked) 
  */
 app.post('/login', jsonParser, (req, res) => {
+	logger.info(getSource(req) + " logging in as " + req.body.user + ", " + req.body.password); 
 	_readQueue.push( new WebOperation("login",  req,  res ))
 });
 
@@ -93,6 +116,8 @@ app.post('/login', jsonParser, (req, res) => {
  * Logs the user out
  */
 app.post('/logout', jsonParser, (req, res) => {
+	logger.info(getSource(req) + " logging out with " + req.body.token); 
+
 	if (_userCredentials[req.body.token]) {
 		delete _userCredentials[req.body.token];
 	} 
@@ -100,21 +125,15 @@ app.post('/logout', jsonParser, (req, res) => {
 	res.end();
 });
 
-
-// deprecated -- keeping it here in case we do need to move to a file based apporach 
-app.post('/post-session-fs', jsonParser, function (req, res) {
-	filePath = __dirname + "/" + req.body.user + '.txt';
-	fs.appendFile(filePath, JSON.stringify(req.body), function() {
-		res.end();
-	});
-});
-
 /*
- * Handle a post on the database
+ * Handle a order post.
  */
-app.post('/post-session-db', jsonParser, function (req, res) {
+app.post('/post-order', jsonParser, function (req, res) {
 
+	logger.info(getSource(req) + " sending order with " + req.body.token); 
+	
 	var credentials  = _userCredentials[req.body.token];
+	
 	if (req && req.body && credentials) {
 		// get the age of the token and see if it is still valid
 		var now = new Date();
@@ -126,14 +145,30 @@ app.post('/post-session-db', jsonParser, function (req, res) {
 			_writeQueue.push(new WebOperation("insert-order", req, res));
 
 		} else {
-			sendReply(res, -1, accessTimeOutError, "token is no longer valid.");	
+			replyWithError(req, res, "token is no longer valid.");
 			delete _userCredentials[req.body.token];
 		}
 	} else {
-		sendReply(res, -1, invalidBodyOrToken, "invalid request or token provided.");
+		replyWithError(req, res, "invalid request or token provided.");
+	}
+});
+
+function replyWithError(request, response, message) {
+	logger.error(getSource(request) + " post order with outdated token, credentials = " + JSON.stringify(credentials));
+			
+	response.statusMessage = message;
+	response.status(400).end();
+}
+
+function getSource(request) {
+	var originSource = request.headers['x-forwarded-for'];
+
+	if (!originSource) {
+		originSource = request.connection.remoteAddress;
 	}
 
-});
+	return originSource ? originSource : "unknown";
+}
 
 function updateQueues() {
 
@@ -142,14 +177,14 @@ function updateQueues() {
 		_readQueue = [];
 		flushReadQueue(temp, () => {
 			_activeQueue = _writeQueue;
-			setTimeout(updateQueues, 1000 );
+			setTimeout(updateQueues, flushTimeout );
 		});
 	} else {
 		var temp = _writeQueue;
 		_writeQueue = [];
 		flushWriteQueue(temp, () => {
 			_activeQueue = _readQueue;
-			setTimeout(updateQueues, 1000 );
+			setTimeout(updateQueues, flushTimeout );
 		});
 	}
 }
@@ -168,7 +203,7 @@ function flushReadQueue(queue, onCompleteCallback) {
 				if (errCode == 0) {
 					response.send(message);
 				} else {
-					sendReply(response, 0, errCode, message);
+					replyWithError(req, res, message);
 				}
 				outstandingOperations--;
 
@@ -210,7 +245,7 @@ function flushWriteQueue(queue, onCompleteCallback) {
 				if (err) {
 					sendReply(res, req.body.timeStamp, err,  "Err: " + err);
 				} else {
-					sendReply(res, req.body.timeStamp, 0,  "Ok");
+					sendReply(res, req.body.timeStamp, 0, "Ok");
 				}
 
 				outstandingOperations--;
@@ -230,9 +265,11 @@ function login(name, password, callback) {
 
 	// login the user
 	sessionsDb.get("select userId from users where name = ? and password = ?", name, password, (err, row) => {
-		if (err) {
-			callback( -1, "user or password " + name + " not found (err=" +err+ ")." );
-		} else {	
+		if (err ) {
+			callback( -1, "db error (err=" +err+ ")." );
+		} else if (!row) {
+			callback( -1, "user or password " + name + " not found." );
+		}  else {	
 			const id = 	row.userId;	
 			const token = generateToken(id, name, password);
 
@@ -305,8 +342,6 @@ function insertValues(valuesCollection, callback)
 		} 
 	});
 }
-
-
 
 // Start the Express server
 app.listen(3000, () => console.log('Server running on port 3000!'));

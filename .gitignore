@@ -87,3 +87,4 @@ LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dl
 *.cache
 LocalBackEnd/StressTest/PostStressTest/bin/*
 LocalBackEnd/StressTest/PostStressTest/obj/*
+*.log
