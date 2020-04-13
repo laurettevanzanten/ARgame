@@ -18,6 +18,7 @@ namespace PostStressTest.StateMachine
             if (_client != null)
             {
                 _client.Dispose();
+                _client = null;
             }
         }
     }

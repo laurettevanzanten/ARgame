@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace PostStressTest.StateMachine
 {
@@ -29,12 +30,22 @@ namespace PostStressTest.StateMachine
 
         public HttpResponseMessage Response { get; set; }
 
+        private Log _log;
+
+        protected override void OnInitialized()
+        {
+            base.OnInitialized();
+            _log = Context.Resolve<Log>();
+        }
+
         protected override void OnStarted()
         {
+            _log?.Put(OutputLevel.Info, Name, "Start send message.");
+
             Response = null;
             RequestException = null;
             SetupMessage?.Invoke(Message);
-            SendMessage(Context.Obtain<HttpClient>());
+            SendMessage(Context.Resolve<HttpClient>());
         }
 
         public async void SendMessage(HttpClient client)
@@ -53,10 +64,11 @@ namespace PostStressTest.StateMachine
                         break;
                 }
             }
-            catch (HttpRequestException hte)
+            catch (Exception e)
             {
-                // log exception
-                RequestException = hte;
+                var message = e.ToString().Replace(",", " ").Replace("\n", " ").Replace("\r", " ");
+                _log?.Put(OutputLevel.Error, Name, message);
+                RequestException = e;
                 Response = null;
             }
         }
