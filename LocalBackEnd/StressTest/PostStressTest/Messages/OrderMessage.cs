@@ -4,7 +4,7 @@ namespace PostStressTest.Messages
 {
     public class OrderMessage
     {
-        public int token { get; set; }
+        public string token { get; set; }
         public int sessionId { get; set; }
         public int timeStamp { get; set; }
         public Coordinate[] items { get; set; }
@@ -17,7 +17,7 @@ namespace PostStressTest.Messages
             return this;
         }
 
-        public static OrderMessage GenerateRandomMessage(int userToken, Random rng)
+        public static OrderMessage GenerateRandomMessage(string userToken, Random rng)
         {
             return new OrderMessage()
             {

@@ -130,7 +130,7 @@ app.post('/logout', jsonParser, (req, res) => {
  */
 app.post('/post-order', jsonParser, function (req, res) {
 
-	logger.info(getSource(req) + " sending order with " + req.body.token); 
+	logger.info(getSource(req) + " post order with token=" + req.body.token); 
 	
 	var credentials  = _userCredentials[req.body.token];
 	
@@ -145,16 +145,16 @@ app.post('/post-order', jsonParser, function (req, res) {
 			_writeQueue.push(new WebOperation("insert-order", req, res));
 
 		} else {
-			replyWithError(req, res, "token is no longer valid.");
+			replyWithError(req, res, "post order with outdated token, credentials=" + JSON.stringify(credentials));
 			delete _userCredentials[req.body.token];
 		}
 	} else {
-		replyWithError(req, res, "invalid request or token provided.");
+		replyWithError(req, res, "invalid request or token provided (token="+ req.body.token +").");
 	}
 });
 
 function replyWithError(request, response, message) {
-	logger.error(getSource(request) + " post order with outdated token, credentials = " + JSON.stringify(credentials));
+	logger.error(getSource(request) + ", error " + message);
 			
 	response.statusMessage = message;
 	response.status(400).end();
@@ -243,9 +243,9 @@ function flushWriteQueue(queue, onCompleteCallback) {
 				var req = msg.request;
 				
 				if (err) {
-					sendReply(res, req.body.timeStamp, err,  "Err: " + err);
+					replyWithError(req, res, '{"timeStamp": ' + req.body.timeStamp + ', "message": "' + err + '"}');
 				} else {
-					sendReply(res, req.body.timeStamp, 0, "Ok");
+					res.send( '{"timeStamp": ' + req.body.timeStamp + ', "message": "ack"}' );
 				}
 
 				outstandingOperations--;
@@ -273,6 +273,8 @@ function login(name, password, callback) {
 			const id = 	row.userId;	
 			const token = generateToken(id, name, password);
 
+			logger.info("assiging token " + token + " to " + name);
+			
 			_userCredentials[token] = new UserCredentials(id, token, new Date());
 
 			// get the last session the user was working on
@@ -319,14 +321,6 @@ function generateToken(id, user, password) {
 	return token;
 }
 
-/*
- * Create and send a reply to the client
- */ 
-function sendReply(response, timeStamp, errorCode, message)
-{
-	var obj = { errorCode: errorCode, timeStamp: timeStamp, message : message };
-	response.send(JSON.stringify(obj));
-}
 
 /*
  * Insert the properties in a slot for the given user id.
