@@ -5,7 +5,9 @@ const exec = require('child_process').exec;
 const spawn = require('child_process').spawn;
 const fs = require('fs');
 const seedrandom = require('seedrandom');
+const sqlite3 = require('sqlite3').verbose();
 
+var sessionsDb = new sqlite3.Database("sessions.db");
 
 // Create Express app
 const app = express();
@@ -198,7 +200,7 @@ function flushWriteQueue(queue, onCompleteCallback) {
 
 		var outstandingOperations = queue.length;
 
-		insertValues(valuesCollection, (exitCode, err) => {		
+		insertValues(valuesCollection, (err, message) => {		
 			for (var i = 0; i < queue.length; i++) {
 				var msg = queue[i];
 
@@ -224,28 +226,45 @@ function flushWriteQueue(queue, onCompleteCallback) {
 /*
  * Login to the back-end using the given user name and password
  */
-function login(user, password, callback) {
+function login(name, password, callback) {
 
-	getUserId(user, password, (id, userName) => {
-		if (id === -1) {
-			callback( -1, "user or password not found");
-		} else  {
-			const token = generateToken(id, user, password);
+	// login the user
+	sessionsDb.get("select userId from users where name = ? and password = ?", name, password, (err, row) => {
+		if (err) {
+			callback( -1, "user or password " + name + " not found (err=" +err+ ")." );
+		} else {	
+			const id = 	row.userId;	
+			const token = generateToken(id, name, password);
 
 			_userCredentials[token] = new UserCredentials(id, token, new Date());
 
-			getMaxSession(id, (maxSession) => {
-				if (maxSession >= 0) {
-					getMaxTimeStamp(id, maxSession, (maxTimeStamp) => {
-						if (maxTimeStamp >= 0) {
-							callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimeStamp )));
-						} else {
-							callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
-						}		
-					});
-				} else {
-					callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )) );
-				}
+			// get the last session the user was working on
+			sessionsDb.get("select max(session) from sessions where userId = ?", id, (maxSessionErr, maxSessionRow) => {
+				if (maxSessionErr) {
+					callback( -1, "error while retrieving max session (err=" + maxSessionErr + ")." );
+				} else { 
+					var maxSession = maxSessionRow["max(session)"];
+
+					if (maxSession) {
+						sessionsDb.get("select max(timeStamp) from sessions where userId = ? and session = ?", id, maxSession,
+							(maxTimeStampErr, maxTimeStampRow) => {
+								if (maxTimeStampErr) {
+									callback( -1, "error while retrieving max timestamp (err=" + maxTimeStampErr + ")." );
+								} else {
+									var maxTimestamp = maxTimeStampRow["max(timeStamp)"];
+
+									if (maxTimestamp) {
+										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimestamp )));
+									} else {
+										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, -1 )));
+									}
+								}
+							});
+						
+					} else {
+						callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
+					}
+				} 
 			});
 		}
 	});
@@ -263,8 +282,6 @@ function generateToken(id, user, password) {
 	return token;
 }
 
-
-
 /*
  * Create and send a reply to the client
  */ 
@@ -279,65 +296,17 @@ function sendReply(response, timeStamp, errorCode, message)
  */
 function insertValues(valuesCollection, callback)
 {	
-	var child = spawn("sqlite3.exe", ["sessions.db"]);
-
-	child.on('exit', (exitCode) => {
-		if (callback) 
-		{
-			callback(exitCode, null);
-		}		
+	const sqlCall = "insert into sessions values "  + valuesCollection.join();
+	sessionsDb.run(sqlCall, (err) => {
+		if (err) {
+			callback(err, "error while inserting values.");
+		} else {
+			callback(0, "ok");
+		} 
 	});
-
-	child.on('error', (exitCode) => {
-		if (callback) 
-		{
-			callback(exitCode, exitCode);
-		}
-	});
-
-	var sqlInsert = 'insert into sessions values '  + valuesCollection.join() + ';\n'
-
-	child.stdin.setEncoding('utf-8');
-	child.stdout.pipe(process.stdout);
-
-	// note - need to write via stdin, simply adding inserts on the command line kills the node process as the command line
-	// may become too big.	
-	child.stdin.write(sqlInsert);
-	child.stdin.write(".exit\n");
-	child.stdin.end();
 }
 
-/*
- * Returns the user id based on name and password. 
- */
-function getUserId(name, password, callback)
-{
-	var sqlCall = sqlExec 
-		+ '"select userId from users where name=\'' + name + '\' '
-		+ 'and password=\'' + password + '\';"';
-	
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut), name  + "-" + password);
-	} );
-}
 
-function getMaxSession(userId, callback)  {
-	var sqlCall = sqlExec 
-		+ '"select max(session) from sessions where userId = ' + userId + ';';
-
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut));
-	} );
-}
-
-function getMaxTimeStamp(userId, sessionId, callback)  {
-	var sqlCall = sqlExec 
-		+ '"select max(timeStamp) from sessions where userId= ' + userId + ' and session=' + sessionId + ';';
-
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut));
-	} );
-}
 
 // Start the Express server
 app.listen(3000, () => console.log('Server running on port 3000!'));

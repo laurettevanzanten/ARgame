@@ -1,8 +1,8 @@
 ﻿using PostStressTest.Messages;
 using PostStressTest.StateMachine;
 using System;
-using System.Diagnostics;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace PostStressTest
 {
@@ -22,35 +22,36 @@ namespace PostStressTest
         public static HttpMessageAgent CreateHttpMessageAgent(IoC ioc, string user, string password)
         {
             var messageAgent = new HttpMessageAgent();
-            var rng = ioc.Obtain<Random>();
+            var rng = ioc.Resolve<Random>();
+            var log = ioc.Resolve<Log>();
 
             var sendOrder = messageAgent.AddState<HttpMessageState>((s) =>
             {
-                s.Name = "send order";
+                s.Name = user + ", HttpMessageState::sendOrder";
                 s.Uri = "http://localhost:3000/post-session-db";
                 s.Message = OrderMessage.GenerateRandomMessage(-1, rng);
                 s.SetupMessage = (msg) =>
                 {
                     var orderMessage = (OrderMessage)msg;
 
-                    orderMessage.token = s.Context.Obtain<int>(UserTokenId);
-                    orderMessage.Randomize(s.Context.Obtain<Random>());
-                    Debug.WriteLine(s.Context.Obtain<string>(UserNameId) + "-" +
-                        orderMessage.token + ": sending order with " + orderMessage.items.Length + " items.");
+                    orderMessage.token = s.Context.Resolve<int>(UserTokenId);
+                    orderMessage.Randomize(s.Context.Resolve<Random>());
+
+                    log?.Put(OutputLevel.Info, s.Name, "sending order with " + orderMessage.items.Length + " items.");
                 };
                 s.SendMethod = RestMethod.POST;
             });
 
             var login = messageAgent.AddState<HttpMessageState>((s) =>
             {
-                s.Name = "login";
+                s.Name = user + ", HttpMessageState::login";
                 s.Uri = "http://localhost:3000/login";
                 s.Message = new LoginMessage()
                 {
                     user = user,
                     password = password,
                 };
-                s.SetupMessage = (msg) => Debug.WriteLine("logging in user " + ((LoginMessage)s.Message).user);
+                s.SetupMessage = (msg) => log?.Put(OutputLevel.Info, s.Name, "logging in user " + ((LoginMessage)s.Message).user);
                 s.ProcessResponse = async (response) =>
                 {
                     if (response.IsSuccessStatusCode)
@@ -58,11 +59,11 @@ namespace PostStressTest
                         var message = await response.Content.ReadAsStringAsync();
 
                         if (!string.IsNullOrEmpty(message))
-                        {
+                        { 
                             var loginResponse = JsonSerializer.Deserialize<LoginResponse>(message);
                             var token = int.Parse(loginResponse.token);
 
-                            Debug.WriteLine("user " + ((LoginMessage)s.Message).user + " received token " + token);
+                            log?.Put(OutputLevel.Info, s.Name, " received token " + token);
 
                             s.Context.Register(UserTokenId, token);
                         }
@@ -89,7 +90,7 @@ namespace PostStressTest
             {
                 // if failed to login, try again later
                 return (login.RequestException != null || !login.Response.IsSuccessStatusCode)
-                            ? (IState) delayTryRepeatLogin 
+                            ? delayTryRepeatLogin
                             : (IState) sendOrder;
             });
 
@@ -97,7 +98,16 @@ namespace PostStressTest
             messageAgent.AddStateTransition(delayTryRepeatLogin, () => login);
 
             // sent an order, now wait for a bit
-            messageAgent.AddStateTransition(sendOrder, () => delaySendOrder);
+            messageAgent.AddStateTransition(sendOrder, () => {
+                if (sendOrder.RequestException != null)
+                {
+                    if (sendOrder.RequestException is TaskCanceledException)
+                    {
+                        return null;
+                    }
+                }
+                return delaySendOrder;
+            });
 
             // waited for a bit now send it again
             messageAgent.AddStateTransition(delaySendOrder, () => sendOrder);
