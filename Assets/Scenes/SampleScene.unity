@@ -176,7 +176,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &360184563
 GameObject:
@@ -552,7 +552,7 @@ MonoBehaviour:
   rackVariations:
   - {fileID: 4989390358863153904, guid: ff4fe3059b3f8da4a9958e61950b7525, type: 3}
   rackCount: 3
-
+  rackSpacing: {x: 4, y: 0, z: 0}
   rackLabelPrefix: 65
   soundList:
     itemCollected: {fileID: 8300000, guid: 489053f73764df1459bd80017ba752dc, type: 3}
@@ -602,7 +602,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.245
+  m_Volume: 0.142
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -927,10 +927,10 @@ Transform:
   m_GameObject: {fileID: 863475054}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: -3, z: 0}
-
+  m_LocalScale: {x: 0.96, y: 0.96, z: 0.96}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &863475057
 MonoBehaviour:
@@ -958,7 +958,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -0.2}
+  m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -969,7 +969,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.9, y: 0.2}
+  m_Size: {x: 2, y: 1.2}
   m_EdgeRadius: 0
 --- !u!1 &995926467
 GameObject:
@@ -1937,7 +1937,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2123071191
 GameObject:
