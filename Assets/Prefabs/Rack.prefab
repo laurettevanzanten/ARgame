@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 4989390358863153904}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -6, y: 2, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_Children:
   - {fileID: 4664876845916667998}
   m_Father: {fileID: 0}
@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 3
   height: 5
-  spacing: {x: 1.2, y: 1.2, z: 0}
+  spacing: {x: 0.96, y: 0.96, z: 0}
   spriteMinScale: {x: 1, y: 1, z: 1}
   spriteMaxScale: {x: 1, y: 1, z: 1}
   boxPrefab: {fileID: 1232545145495783667, guid: 3f99265fbe4ba9a47947df860964b266,
