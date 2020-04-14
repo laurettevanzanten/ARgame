@@ -55,5 +55,10 @@ namespace PostStressTest
             }
             return default(T);
         }
+
+        public void Remove(string id)
+        {
+            _objects.TryRemove(id, out var dummy);
+        }
     }
 }

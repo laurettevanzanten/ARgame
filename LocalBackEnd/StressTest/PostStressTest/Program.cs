@@ -24,7 +24,7 @@ namespace PostStressTest
         static void Main(string[] args)
         {
             const int maxUsers = 10;
-            const int maxTimeSeconds = 30;
+            const int maxTimeSeconds = 90;
 
             var log = new Log()
             {
