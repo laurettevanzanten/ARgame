@@ -1,3 +1,5 @@
+var UserCredentials = require("./user-credentials.js");
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -63,14 +65,6 @@ class WebOperation {
 		this.name = name;
 		this.request = request;
 		this.response = response;
-	}
-}
-
-class UserCredentials {
-	constructor(id, token, date) {
-		this.id = id;
-		this.token = token;
-		this.date = date;
 	}
 }
 
