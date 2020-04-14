@@ -30,10 +30,15 @@ namespace PostStressTest
 
             var sendOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendOrderState(s, log, rng, user));
             var login = messageAgent.AddState<HttpMessageState>((s) => ConfigureLoginState(s, log, user, password));
+            var logout = messageAgent.AddState<HttpMessageState>((s) => ConfigureLogoutState(s, log, user));
+
+            var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
             var delaySendOrder = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
-            var delayTryRepeatLogin = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 3000, 6000));
             
-            messageAgent.CurrentState = login;
+            messageAgent.CurrentState = loggedOutState;
+
+            // done waiting after being logged out, try login again
+            messageAgent.AddStateTransition(loggedOutState, () => login);
 
             messageAgent.AddStateTransition(login, () =>
             {
@@ -48,23 +53,29 @@ namespace PostStressTest
                     else
                     {
                         // exception has been logged - server might not be up, try later
-                        return delayTryRepeatLogin;
+                        return loggedOutState;
                     }
                 }
                 else if (!login.Response.IsSuccessStatusCode)
                 {
                     log?.Put(OutputLevel.Error, login.Name,
                                     "login was not successfull, " + login.Response.ReasonPhrase);
-                    return delayTryRepeatLogin;
+                    return loggedOutState;
                 }
                 else
                 {
-                    return sendOrder;
+                    // generally speaking start sending orders, but add a small chance to log out again
+                    if (rng.NextDouble() > 0.2)
+                    {
+                        return sendOrder;
+                    }
+                    else
+                    {
+                        return logout;
+                    }
                 }
             });
 
-            // done waiting after a failed login, try login again
-            messageAgent.AddStateTransition(delayTryRepeatLogin, () => login);
 
             // sent an order, now wait for a bit
             messageAgent.AddStateTransition(sendOrder, () =>
@@ -77,11 +88,34 @@ namespace PostStressTest
                         return null;
                     }
                 }
-                return delaySendOrder;
+
+                // generally speaking start sending orders, but add a small chance to log out again
+                if (rng.NextDouble() > 0.2)
+                {
+                    return delaySendOrder;
+                }
+                else
+                {
+                    return logout;
+                }                
             });
 
             // waited for a bit now send it again
             messageAgent.AddStateTransition(delaySendOrder, () => sendOrder);
+
+            // when done logging out, go back to logging in
+            messageAgent.AddStateTransition(logout, () => 
+            {
+                if (login.RequestException != null || login.Response == null)
+                {
+                    // task got canceled - main app is stopping, return null, ending the agent's lifecycle
+                    if (login.RequestException is TaskCanceledException)
+                    {
+                        return null;
+                    }
+                }
+                return loggedOutState;
+            });
 
             messageAgent.Initialize(ioc);
 
@@ -154,6 +188,29 @@ namespace PostStressTest
                             s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
                         }
                     }
+                }
+            };
+            s.SendMethod = RestMethod.POST;
+            return s;
+        }
+
+        private static HttpMessageState ConfigureLogoutState(HttpMessageState s, Log log, string user)
+        {
+            var logoutMessage = new LogoutMessage();
+
+            s.Name = user + ", HttpMessageState::logout";
+            s.Uri = "http://localhost:3000/logout";
+            s.Message = logoutMessage;
+            s.SetupMessage = (msg) =>
+            {
+                logoutMessage.token = s.Context.Resolve<string>(UserTokenId);
+                log?.Put(OutputLevel.Info, s.Name, "logging out" + user + ".");
+            };
+            s.ProcessResponse = (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    s.Context.Remove(UserTokenId);
                 }
             };
             s.SendMethod = RestMethod.POST;

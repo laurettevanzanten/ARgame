@@ -90,3 +90,4 @@ LocalBackEnd/StressTest/PostStressTest/obj/*
 *.log
 LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.dll
 LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
+LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
