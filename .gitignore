@@ -48,6 +48,7 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+*.cache
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -81,3 +82,12 @@ LocalBackEnd/sqlite3.exe
 LocalBackEnd/sqlite3_analyzer.exe
 LocalBackEnd/test user.txt
 NodeJstest user.txt
+*.cache
+LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
+*.cache
+LocalBackEnd/StressTest/PostStressTest/bin/*
+LocalBackEnd/StressTest/PostStressTest/obj/*
+*.log
+LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.dll
+LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
+LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll

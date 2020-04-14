@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace PostStressTest
 {
@@ -9,7 +10,7 @@ namespace PostStressTest
     {
         public const string GlobalIoCId = "global";
 
-        private Dictionary<string, object> _objects = new Dictionary<string, object>();
+        private ConcurrentDictionary<string, object> _objects = new ConcurrentDictionary<string, object>();
 
         public IoC CopyRegisteredObjects(IoC other)
         {
@@ -32,8 +33,12 @@ namespace PostStressTest
             return Register(typeof(T).Name, value);
         }
 
+        public IoC Register<T>()
+        {
+            return Register(typeof(T).Name, Activator.CreateInstance<T>());
+        }
 
-        public T Obtain<T>(string id)
+        public T Resolve<T>(string id)
         {
             if (_objects.TryGetValue(id, out var result))
             {
@@ -42,13 +47,18 @@ namespace PostStressTest
             return default(T);
         }
 
-        public T Obtain<T>()
+        public T Resolve<T>()
         {
             if (_objects.TryGetValue(typeof(T).Name, out var result))
             {
                 return (T)result;
             }
             return default(T);
+        }
+
+        public void Remove(string id)
+        {
+            _objects.TryRemove(id, out var dummy);
         }
     }
 }

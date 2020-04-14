@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using System.Threading;
 using System.Collections.Generic;
-
+using PostStressTest.StateMachine;
+using System.Linq;
 
 /// <summary>
 /// Simple stress test program for the back-end server
@@ -14,55 +15,117 @@ using System.Collections.Generic;
 namespace PostStressTest
 {
    
-
+    public class AgentTaskList : List<(BasicAgent agent, CancellationTokenSource cancelSource, Task task)>
+    {
+    }
 
     class Program
     {
         static void Main(string[] args)
         {
             const int maxUsers = 10;
-            var ioc = new IoC().Register<Random>(new Random());
-            var taskList = new List<(CancellationToken cancelToken, Task task)>();
+            const int maxTimeSeconds = 90;
+
+            var log = new Log()
+            {
+                OutputSet = OutputChannel.Debug | OutputChannel.Memory
+            };
+
+            var ioc = new IoC()
+                        .Register<Random>()
+                        .Register<Log>(log);
+
+            var agentTaskList = CreateTaskList(ioc, maxUsers);
+
+            RunAgentTasks(agentTaskList, maxTimeSeconds);
+            StopAgentTasks(agentTaskList);
+
+            var messageCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.MessageCountId));
+            var ackCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.AckCountId));
+
+            log.FlushCSV("stress-test.csv");
+        }
+
+        private static AgentTaskList CreateTaskList(IoC ioc, int agentCount, int taskIntervalMS = 10)
+        {
+            var agentTaskList = new AgentTaskList();
 
             // create tasks for each user
-            for (int i = 0; i < maxUsers; i++)
+            for (int i = 0; i < agentCount; i++)
             {
-                var token = new CancellationToken();
+                var cancelSource = new CancellationTokenSource();
+                var token = cancelSource.Token;
                 var userName = "user" + (i + 1);
                 var password = "pwd" + (i + 1);
-                taskList.Add((token,
+                var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password);
+
+                agentTaskList.Add((
+                    agent,
+                    cancelSource,
                     Task.Run(async () =>
                     {
-                        using (var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password))
+                        using (agent)
                         {
                             agent.Start();
 
                             while (agent.Phase == StateMachine.StatePhase.Started)
                             {
                                 agent.Update();
-                                await Task.Delay(100, token);
+                                await Task.Delay(taskIntervalMS, token);
                             }
                         }
+                        agent.Stop();
                     })));
             }
 
-            while (taskList.Count > 0)
-            {
-                for (int i = 0; i < taskList.Count;)
-                {
-                    var task = taskList[i].task;
+            return agentTaskList;
+        }
 
-                    if (task.Status == TaskStatus.Running || task.Status == TaskStatus.WaitingForActivation)
+        static void RunAgentTasks(
+            AgentTaskList agentTaskList, 
+            int maxTimeSeconds,
+            int intervalMs = 10)
+        {
+            var startTime = DateTime.Now;
+
+            while (agentTaskList.Count > 0 
+                && (maxTimeSeconds < 0 || (DateTime.Now - startTime).TotalSeconds < maxTimeSeconds))
+            {
+                for (int i = 0; i < agentTaskList.Count;)
+                {
+                    var agentTask = agentTaskList[i].task;
+
+                    if (agentTask.Status == TaskStatus.Running || agentTask.Status == TaskStatus.WaitingForActivation)
                     {
                         i++;
                     }
                     else
                     {
-                        taskList.RemoveAt(i);
+                        agentTaskList.RemoveAt(i);
                     }
                 }
 
-                Thread.Sleep(100);
+                Thread.Sleep(intervalMs);
+            }
+        }
+
+        static void StopAgentTasks(AgentTaskList agentTaskList)
+        {
+            bool isRunning(Task t) => t.Status == TaskStatus.Running || t.Status == TaskStatus.WaitingForActivation;
+
+            while (agentTaskList.Any( tuple => isRunning(tuple.task)))
+            {
+                for (int i = 0; i < agentTaskList.Count; i++)
+                {
+                    var agentTask = agentTaskList[i].task;
+                    
+                    if (isRunning(agentTask))
+                    {
+                        agentTaskList[i].cancelSource.Cancel();
+                    }
+                }
+
+                Thread.Sleep(250);
             }
         }
     }

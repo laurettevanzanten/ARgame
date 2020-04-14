@@ -1,52 +1,70 @@
+var UserCredentials = require("./user-credentials.js");
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
-const fs = require('fs');
 const seedrandom = require('seedrandom');
 
+const winston = require('winston');
+const { MESSAGE } = require("triple-beam");
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'laurette-server.log' }),
+    new winston.transports.Console({
+		//
+		// Possible to override the log method of the
+		// internal transports of winston@3.0.0.
+		//
+		log(info, callback) {
+			setImmediate(() => this.emit("logged", info));
+
+			console.log(info[MESSAGE]);
+		
+			if (callback) {
+				callback();
+			}
+		}
+	  })
+  ]
+});
+
+const sqlite3 = require('sqlite3').verbose();
+
+// open the database
+var sessionsDb = new sqlite3.Database("sessions.db");
 
 // Create Express app
 const app = express();
 
-const sqlExec = "sqlite3.exe sessions.db ";
-
 const jsonParser = bodyParser.json();
 
 const whitleListDomain = ['http://localhost:8080',
-							// http://alloweddomain.com' is aplaceholder
+							// http://alloweddomain.com' is a placeholder
 							'http://alloweddomain.com'];
 
 
-const flushTimeout = 1000;
+
 // token can only live for 5 minutes
 const maxTokenAge = 60 * 5;
+var _userCredentials = {};
 
-// error which occurs when the client didn't provide a request body or invalid token
-const invalidBodyOrToken = -5;
-// error which occurs if the user is inactive for more than maxTokenAge 
-const accessTimeOutError = -6;
+// how often do we flush the read/write quuees 
+const flushTimeout = 1000;
 
 var _writeQueue = [];
 var _readQueue = [];
+
 var _activeQueue;
 
-var _userCredentials = {};
 
 class WebOperation {
 	constructor(name, request, response) {
 		this.name = name;
 		this.request = request;
 		this.response = response;
-	}
-}
-
-class UserCredentials {
-	constructor(id, token, date) {
-		this.id = id;
-		this.token = token;
-		this.date = date;
 	}
 }
 
@@ -84,6 +102,7 @@ app.get('/', (req, res) => res.send('Laurette - Server, thesis v0.001'));
  * be hacked) 
  */
 app.post('/login', jsonParser, (req, res) => {
+	logger.info(getSource(req) + " logging in as " + req.body.user + ", " + req.body.password); 
 	_readQueue.push( new WebOperation("login",  req,  res ))
 });
 
@@ -91,6 +110,8 @@ app.post('/login', jsonParser, (req, res) => {
  * Logs the user out
  */
 app.post('/logout', jsonParser, (req, res) => {
+	logger.info(getSource(req) + " logging out with " + req.body.token); 
+
 	if (_userCredentials[req.body.token]) {
 		delete _userCredentials[req.body.token];
 	} 
@@ -98,21 +119,15 @@ app.post('/logout', jsonParser, (req, res) => {
 	res.end();
 });
 
-
-// deprecated -- keeping it here in case we do need to move to a file based apporach 
-app.post('/post-session-fs', jsonParser, function (req, res) {
-	filePath = __dirname + "/" + req.body.user + '.txt';
-	fs.appendFile(filePath, JSON.stringify(req.body), function() {
-		res.end();
-	});
-});
-
 /*
- * Handle a post on the database
+ * Handle a order post.
  */
-app.post('/post-session-db', jsonParser, function (req, res) {
+app.post('/post-order', jsonParser, function (req, res) {
 
+	logger.info(getSource(req) + " post order with token=" + req.body.token); 
+	
 	var credentials  = _userCredentials[req.body.token];
+	
 	if (req && req.body && credentials) {
 		// get the age of the token and see if it is still valid
 		var now = new Date();
@@ -124,14 +139,30 @@ app.post('/post-session-db', jsonParser, function (req, res) {
 			_writeQueue.push(new WebOperation("insert-order", req, res));
 
 		} else {
-			sendReply(res, -1, accessTimeOutError, "token is no longer valid.");	
+			replyWithError(req, res, "post order with outdated token, credentials=" + JSON.stringify(credentials));
 			delete _userCredentials[req.body.token];
 		}
 	} else {
-		sendReply(res, -1, invalidBodyOrToken, "invalid request or token provided.");
+		replyWithError(req, res, "invalid request or token provided (token="+ req.body.token +").");
+	}
+});
+
+function replyWithError(request, response, message) {
+	logger.error(getSource(request) + ", error " + message);
+			
+	response.statusMessage = message;
+	response.status(400).end();
+}
+
+function getSource(request) {
+	var originSource = request.headers['x-forwarded-for'];
+
+	if (!originSource) {
+		originSource = request.connection.remoteAddress;
 	}
 
-});
+	return originSource ? originSource : "unknown";
+}
 
 function updateQueues() {
 
@@ -140,14 +171,14 @@ function updateQueues() {
 		_readQueue = [];
 		flushReadQueue(temp, () => {
 			_activeQueue = _writeQueue;
-			setTimeout(updateQueues, 1000 );
+			setTimeout(updateQueues, flushTimeout );
 		});
 	} else {
 		var temp = _writeQueue;
 		_writeQueue = [];
 		flushWriteQueue(temp, () => {
 			_activeQueue = _readQueue;
-			setTimeout(updateQueues, 1000 );
+			setTimeout(updateQueues, flushTimeout );
 		});
 	}
 }
@@ -166,7 +197,7 @@ function flushReadQueue(queue, onCompleteCallback) {
 				if (errCode == 0) {
 					response.send(message);
 				} else {
-					sendReply(response, 0, errCode, message);
+					replyWithError(req, res, message);
 				}
 				outstandingOperations--;
 
@@ -198,7 +229,7 @@ function flushWriteQueue(queue, onCompleteCallback) {
 
 		var outstandingOperations = queue.length;
 
-		insertValues(valuesCollection, (exitCode, err) => {		
+		insertValues(valuesCollection, (err, message) => {		
 			for (var i = 0; i < queue.length; i++) {
 				var msg = queue[i];
 
@@ -206,9 +237,9 @@ function flushWriteQueue(queue, onCompleteCallback) {
 				var req = msg.request;
 				
 				if (err) {
-					sendReply(res, req.body.timeStamp, err,  "Err: " + err);
+					replyWithError(req, res, '{"timeStamp": ' + req.body.timeStamp + ', "message": "' + err + '"}');
 				} else {
-					sendReply(res, req.body.timeStamp, 0,  "Ok");
+					res.send( '{"timeStamp": ' + req.body.timeStamp + ', "message": "ack"}' );
 				}
 
 				outstandingOperations--;
@@ -224,28 +255,49 @@ function flushWriteQueue(queue, onCompleteCallback) {
 /*
  * Login to the back-end using the given user name and password
  */
-function login(user, password, callback) {
+function login(name, password, callback) {
 
-	getUserId(user, password, (id, userName) => {
-		if (id === -1) {
-			callback( -1, "user or password not found");
-		} else  {
-			const token = generateToken(id, user, password);
+	// login the user
+	sessionsDb.get("select userId from users where name = ? and password = ?", name, password, (err, row) => {
+		if (err ) {
+			callback( -1, "db error (err=" +err+ ")." );
+		} else if (!row) {
+			callback( -1, "user or password " + name + " not found." );
+		}  else {	
+			const id = 	row.userId;	
+			const token = generateToken(id, name, password);
 
+			logger.info("assiging token " + token + " to " + name);
+			
 			_userCredentials[token] = new UserCredentials(id, token, new Date());
 
-			getMaxSession(id, (maxSession) => {
-				if (maxSession >= 0) {
-					getMaxTimeStamp(id, maxSession, (maxTimeStamp) => {
-						if (maxTimeStamp >= 0) {
-							callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimeStamp )));
-						} else {
-							callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
-						}		
-					});
-				} else {
-					callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )) );
-				}
+			// get the last session the user was working on
+			sessionsDb.get("select max(session) from sessions where userId = ?", id, (maxSessionErr, maxSessionRow) => {
+				if (maxSessionErr) {
+					callback( -1, "error while retrieving max session (err=" + maxSessionErr + ")." );
+				} else { 
+					var maxSession = maxSessionRow["max(session)"];
+
+					if (maxSession) {
+						sessionsDb.get("select max(timeStamp) from sessions where userId = ? and session = ?", id, maxSession,
+							(maxTimeStampErr, maxTimeStampRow) => {
+								if (maxTimeStampErr) {
+									callback( -1, "error while retrieving max timestamp (err=" + maxTimeStampErr + ")." );
+								} else {
+									var maxTimestamp = maxTimeStampRow["max(timeStamp)"];
+
+									if (maxTimestamp) {
+										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimestamp )));
+									} else {
+										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, -1 )));
+									}
+								}
+							});
+						
+					} else {
+						callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
+					}
+				} 
 			});
 		}
 	});
@@ -264,79 +316,19 @@ function generateToken(id, user, password) {
 }
 
 
-
-/*
- * Create and send a reply to the client
- */ 
-function sendReply(response, timeStamp, errorCode, message)
-{
-	var obj = { errorCode: errorCode, timeStamp: timeStamp, message : message };
-	response.send(JSON.stringify(obj));
-}
-
 /*
  * Insert the properties in a slot for the given user id.
  */
 function insertValues(valuesCollection, callback)
 {	
-	var child = spawn("sqlite3.exe", ["sessions.db"]);
-
-	child.on('exit', (exitCode) => {
-		if (callback) 
-		{
-			callback(exitCode, null);
-		}		
+	const sqlCall = "insert into sessions values "  + valuesCollection.join();
+	sessionsDb.run(sqlCall, (err) => {
+		if (err) {
+			callback(err, "error while inserting values.");
+		} else {
+			callback(0, "ok");
+		} 
 	});
-
-	child.on('error', (exitCode) => {
-		if (callback) 
-		{
-			callback(exitCode, exitCode);
-		}
-	});
-
-	var sqlInsert = 'insert into sessions values '  + valuesCollection.join() + ';\n'
-
-	child.stdin.setEncoding('utf-8');
-	child.stdout.pipe(process.stdout);
-
-	// note - need to write via stdin, simply adding inserts on the command line kills the node process as the command line
-	// may become too big.	
-	child.stdin.write(sqlInsert);
-	child.stdin.write(".exit\n");
-	child.stdin.end();
-}
-
-/*
- * Returns the user id based on name and password. 
- */
-function getUserId(name, password, callback)
-{
-	var sqlCall = sqlExec 
-		+ '"select userId from users where name=\'' + name + '\' '
-		+ 'and password=\'' + password + '\';"';
-	
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut), name  + "-" + password);
-	} );
-}
-
-function getMaxSession(userId, callback)  {
-	var sqlCall = sqlExec 
-		+ '"select max(session) from sessions where userId = ' + userId + ';';
-
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut));
-	} );
-}
-
-function getMaxTimeStamp(userId, sessionId, callback)  {
-	var sqlCall = sqlExec 
-		+ '"select max(timeStamp) from sessions where userId= ' + userId + ' and session=' + sessionId + ';';
-
-	exec(sqlCall, (err, stdOut, stdErr) =>{
-		callback(!stdOut  ? -1 : parseInt(stdOut));
-	} );
 }
 
 // Start the Express server

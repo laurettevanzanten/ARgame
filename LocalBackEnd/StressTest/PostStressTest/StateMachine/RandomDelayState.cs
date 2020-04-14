@@ -13,7 +13,7 @@ namespace PostStressTest.StateMachine
 
         protected override void OnStarted()
         {
-            _delayMs = Context.Obtain<Random>().Next(MinDelayMs, MaxDelayMs);
+            _delayMs = Context.Resolve<Random>().Next(MinDelayMs, MaxDelayMs);
             _startTime = DateTime.Now;
         }
 
