@@ -1,9 +1,10 @@
 ﻿
+* clean up and document back-end code
+* test back-end limit
+
+* send wrong token with order
 * Add & Catch state errors
 * Add error retry / fail
-* Test with 50 users for x time
-* wrong log in name
-* send wrong format
 
 [done] Add log out / log in 
 [done] Add logging - stress tests done
@@ -11,3 +12,6 @@
 [done] unify server replies
 [done] Add logging, back-end
 [done] Count messages sent
+[done] Test with 50 users for x time
+[done] wrong log in name
+[done] send wrong order format

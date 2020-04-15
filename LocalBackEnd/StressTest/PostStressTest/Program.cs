@@ -23,7 +23,8 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const int maxUsers = 10;
+            const string endPoint = "http://localhost:3000";
+            const int maxUsers = 50;
             const int maxTimeSeconds = 90;
 
             var log = new Log()
@@ -35,7 +36,7 @@ namespace PostStressTest
                         .Register<Random>()
                         .Register<Log>(log);
 
-            var agentTaskList = CreateTaskList(ioc, maxUsers);
+            var agentTaskList = CreateTaskList(ioc, maxUsers, endPoint);
 
             RunAgentTasks(agentTaskList, maxTimeSeconds);
             StopAgentTasks(agentTaskList);
@@ -46,7 +47,7 @@ namespace PostStressTest
             log.FlushCSV("stress-test.csv");
         }
 
-        private static AgentTaskList CreateTaskList(IoC ioc, int agentCount, int taskIntervalMS = 10)
+        private static AgentTaskList CreateTaskList(IoC ioc, int agentCount, string endPoint, int taskIntervalMS = 10)
         {
             var agentTaskList = new AgentTaskList();
 
@@ -57,7 +58,7 @@ namespace PostStressTest
                 var token = cancelSource.Token;
                 var userName = "user" + (i + 1);
                 var password = "pwd" + (i + 1);
-                var agent = AgentFactory.CreateHttpMessageAgent(ioc, userName, password);
+                var agent = AgentFactory.CreateHttpMessageAgent(ioc, endPoint, userName, password);
 
                 agentTaskList.Add((
                     agent,

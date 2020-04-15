@@ -1,8 +1,9 @@
-﻿using PostStressTest.Messages;
-using PostStressTest.StateMachine;
-using System;
+﻿using System;
 using System.Text.Json;
 using System.Threading.Tasks;
+
+using PostStressTest.Messages;
+using PostStressTest.StateMachine;
 
 namespace PostStressTest
 {
@@ -21,24 +22,40 @@ namespace PostStressTest
         /// <param name="user"></param>
         /// <param name="password"></param>
         /// <returns></returns>
-        public static HttpMessageAgent CreateHttpMessageAgent(IoC ioc, string user, string password)
+        public static HttpMessageAgent CreateHttpMessageAgent(IoC ioc, string endPoint, string user, string password)
         {
             var messageAgent = new HttpMessageAgent();
 
             var rng = ioc.Resolve<Random>();
             var log = ioc.Resolve<Log>();
 
-            var sendOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendOrderState(s, log, rng, user));
-            var login = messageAgent.AddState<HttpMessageState>((s) => ConfigureLoginState(s, log, user, password));
-            var logout = messageAgent.AddState<HttpMessageState>((s) => ConfigureLogoutState(s, log, user));
+
+            var login = messageAgent.AddState<HttpMessageState>((s) => ConfigureLoginState(s, log, endPoint, user, password));
+            var wrongLogin = messageAgent.AddState<HttpMessageState>((s) => ConfigurewrongLoginState(s, log, endPoint, "foo", "barr"));
+
+            var sendOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendOrderState(s, log, rng, endPoint, user));
+            var sendFaultyOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendFaultyOrderState(s, log, rng, endPoint, user));
+
+            var logout = messageAgent.AddState<HttpMessageState>((s) => ConfigureLogoutState(s, log, endPoint, user));
 
             var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
-            var delaySendOrder = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
+            var loggedInState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
             
             messageAgent.CurrentState = loggedOutState;
 
-            // done waiting after being logged out, try login again
-            messageAgent.AddStateTransition(loggedOutState, () => login);
+            // done waiting after being logged out, try login (again)
+            messageAgent.AddStateTransition(loggedOutState, () => {
+
+                // generally speaking login correctly but every now and then do a wrong login
+                if (rng.NextDouble() > 0.2)
+                {
+                    return login;
+                }
+                else
+                {
+                    return wrongLogin;
+                }
+            });
 
             messageAgent.AddStateTransition(login, () =>
             {
@@ -67,7 +84,7 @@ namespace PostStressTest
                     // generally speaking start sending orders, but add a small chance to log out again
                     if (rng.NextDouble() > 0.2)
                     {
-                        return sendOrder;
+                        return rng.NextDouble() > 0.5 ? (IState) sendOrder : loggedInState;
                     }
                     else
                     {
@@ -75,7 +92,6 @@ namespace PostStressTest
                     }
                 }
             });
-
 
             // sent an order, now wait for a bit
             messageAgent.AddStateTransition(sendOrder, () =>
@@ -92,7 +108,7 @@ namespace PostStressTest
                 // generally speaking start sending orders, but add a small chance to log out again
                 if (rng.NextDouble() > 0.2)
                 {
-                    return delaySendOrder;
+                    return loggedInState;
                 }
                 else
                 {
@@ -101,7 +117,10 @@ namespace PostStressTest
             });
 
             // waited for a bit now send it again
-            messageAgent.AddStateTransition(delaySendOrder, () => sendOrder);
+            messageAgent.AddStateTransition(loggedInState, () => rng.NextDouble() > 0.2 ? sendOrder : sendFaultyOrder);
+
+            // try logging in again
+            messageAgent.AddStateTransition(wrongLogin, () => loggedOutState);
 
             // when done logging out, go back to logging in
             messageAgent.AddStateTransition(logout, () => 
@@ -117,6 +136,7 @@ namespace PostStressTest
                 return loggedOutState;
             });
 
+            
             messageAgent.Initialize(ioc);
 
             messageAgent.AgentContext.Register(UserNameId, user);
@@ -126,11 +146,10 @@ namespace PostStressTest
             return messageAgent;
         }
 
-
-        private static HttpMessageState ConfigureLoginState(HttpMessageState s, Log log, string user, string password)
+        private static HttpMessageState ConfigureLoginState(HttpMessageState s, Log log, string endPoint, string user, string password)
         {
             s.Name = user + ", HttpMessageState::login";
-            s.Uri = "http://localhost:3000/login";
+            s.Uri = endPoint + "/login";
             s.Message = new LoginMessage()
             {
                 user = user,
@@ -157,12 +176,37 @@ namespace PostStressTest
             return s;
         }
 
-        private static HttpMessageState ConfigureSendOrderState(HttpMessageState s, Log log, Random rng, string user)
+        private static HttpMessageState ConfigurewrongLoginState(HttpMessageState s, Log log, string endPoint, string user, string password)
+        {
+            s.Name = user + ", HttpMessageState::login";
+            s.Uri = endPoint + "/login";
+            s.Message = new LoginMessage()
+            {
+                user = user,
+                password = password,
+            };
+            s.SetupMessage = (msg) => log?.Put(OutputLevel.Info, s.Name, "logging in user with faulty password" + ((LoginMessage)s.Message).user);
+            s.ProcessResponse = (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    log?.Put(OutputLevel.Error, s.Name, " somehow the login was correct using " + user + "/" + password);
+                }
+                else
+                {
+                    log?.Put(OutputLevel.Info, s.Name, " got expected response (ie password does not exist) :) ");
+                }
+            };
+            s.SendMethod = RestMethod.POST;
+            return s;
+        }
+
+        private static HttpMessageState ConfigureSendOrderState(HttpMessageState s, Log log, Random rng, string endPoint, string user)
         {
             var orderMessage = OrderMessage.GenerateRandomMessage("-1", rng);
 
             s.Name = user + ", HttpMessageState::sendOrder";
-            s.Uri = "http://localhost:3000/post-order";
+            s.Uri = endPoint + "/post-order";
             s.Message = orderMessage;
             s.SetupMessage = (msg) =>
             {
@@ -189,17 +233,55 @@ namespace PostStressTest
                         }
                     }
                 }
+                else
+                {
+                    log?.Put(OutputLevel.Error, s.Name, "send order with " + orderMessage.items.Length + " items, received error code.");
+                }
             };
             s.SendMethod = RestMethod.POST;
             return s;
         }
 
-        private static HttpMessageState ConfigureLogoutState(HttpMessageState s, Log log, string user)
+        private static HttpMessageState ConfigureSendFaultyOrderState(HttpMessageState s, Log log, Random rng, string endPoint, string user)
+        {
+            var orderMessage = new FaultyOrderMessage().Randomize(rng);
+
+            s.Name = user + ", HttpMessageState::sendFaultyOrder";
+            s.Uri = endPoint + "/post-order";
+            s.Message = orderMessage;
+            s.SetupMessage = (msg) =>
+            {
+                orderMessage.token = s.Context.Resolve<string>(UserTokenId);
+                orderMessage.Randomize(s.Context.Resolve<Random>());
+
+                s.Context.Register(MessageCountId, s.Context.Resolve<int>(MessageCountId) + 1);
+
+                log?.Put(OutputLevel.Info, s.Name, "sending faulty order.");
+            };
+            s.ProcessResponse = (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    log?.Put(OutputLevel.Error, s.Name, "received success code but expected error.");
+                }
+                else
+                {
+                    log?.Put(OutputLevel.Info, s.Name, "received expected error.");
+                }
+
+            };
+            s.SendMethod = RestMethod.POST;
+            return s;
+        }
+
+
+
+        private static HttpMessageState ConfigureLogoutState(HttpMessageState s, Log log, string endPoint, string user)
         {
             var logoutMessage = new LogoutMessage();
 
             s.Name = user + ", HttpMessageState::logout";
-            s.Uri = "http://localhost:3000/logout";
+            s.Uri = endPoint + "/logout";
             s.Message = logoutMessage;
             s.SetupMessage = (msg) =>
             {
