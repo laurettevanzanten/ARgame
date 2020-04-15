@@ -1,0 +1,11 @@
+// utility to generate random users / password combinations in the local back-end server
+// install dotnet tool install -g dotnet-script
+// run with dotnet script createRandomUserSql.crx 50 > insert50Users.sql3
+
+var count = Args.Count > 0 ? int.Parse(Args[0]) : 3;
+
+for (int i = 0; i < count; i++) 
+{
+	var text = string.Format("insert into users values({0}, \"user{0}\", \"pwd{0}\");", (i+1));
+	System.Console.WriteLine(text);
+}

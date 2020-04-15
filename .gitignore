@@ -91,3 +91,5 @@ LocalBackEnd/StressTest/PostStressTest/obj/*
 LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.dll
 LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
 LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
+LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.csprojAssemblyReference.cache
+LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.csproj.CoreCompileInputs.cache

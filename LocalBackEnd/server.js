@@ -39,7 +39,7 @@ var sessionsDb = new sqlite3.Database("sessions.db");
 // Create Express app
 const app = express();
 
-const jsonParser = bodyParser.json();
+const jsonParser = bodyParser.json({limit: '1mb'});
 
 const whitleListDomain = ['http://localhost:8080',
 							// http://alloweddomain.com' is a placeholder
@@ -134,20 +134,33 @@ app.post('/post-order', jsonParser, function (req, res) {
 		var credentialsAge = (now.getTime() - credentials.date.getTime()) / 1000;
 		
 		if (credentialsAge < maxTokenAge) {
+			
 			// update the token's life
 			_userCredentials[req.body.token].date = now;
-			_writeQueue.push(new WebOperation("insert-order", req, res));
+
+			var valuesErrors = validateOrderProperties(req.body.sessionId, req.body.timeStamp, req.body.items);
+
+			if (!valuesErrors) {
+				if (req.body.items && req.body.items.length > 0) {
+					_writeQueue.push(new WebOperation("insert-order", req, res));
+				} else {
+					// empty array - don't bother inserting empty sets
+					sendAck(res, req.body.timeStamp);
+				}
+			} else {
+				sendErr(req, res, "post order with invalid values " + valuesErrors);
+			}
 
 		} else {
-			replyWithError(req, res, "post order with outdated token, credentials=" + JSON.stringify(credentials));
+			sendErr(req, res, "post order with outdated token, credentials=" + JSON.stringify(credentials));
 			delete _userCredentials[req.body.token];
 		}
 	} else {
-		replyWithError(req, res, "invalid request or token provided (token="+ req.body.token +").");
+		sendErr(req, res, "invalid request or token provided (token="+ req.body.token +").");
 	}
 });
 
-function replyWithError(request, response, message) {
+function sendErr(request, response, message) {
 	logger.error(getSource(request) + ", error " + message);
 			
 	response.statusMessage = message;
@@ -194,10 +207,10 @@ function flushReadQueue(queue, onCompleteCallback) {
 			
 			login(request.body.user, request.body.password, (errCode, message) => {
 				
-				if (errCode == 0) {
+				if (errCode === 0) {
 					response.send(message);
 				} else {
-					replyWithError(req, res, message);
+					sendErr(request, response, message);
 				}
 				outstandingOperations--;
 
@@ -213,7 +226,7 @@ function flushReadQueue(queue, onCompleteCallback) {
 }
 
 function flushWriteQueue(queue, onCompleteCallback) {
-	if (queue.length == 0) {
+	if (queue.length === 0) {
 		onCompleteCallback();
 	}
 	else {
@@ -224,7 +237,8 @@ function flushWriteQueue(queue, onCompleteCallback) {
 			var msgBody =  queue[i].request.body;
 			var itemList = JSON.stringify(msgBody.items);
 			var credentials = _userCredentials[msgBody.token];
-			valuesCollection.push("(" + credentials.id + "," + msgBody.sessionId + "," + msgBody.timeStamp + ",'" + itemList + "')");
+
+			valuesCollection.push("(" + credentials.id + "," + msgBody.sessionId + "," + msgBody.timeStamp + ",'" + itemList + "')");			 
 		}
 
 		var outstandingOperations = queue.length;
@@ -237,20 +251,57 @@ function flushWriteQueue(queue, onCompleteCallback) {
 				var req = msg.request;
 				
 				if (err) {
-					replyWithError(req, res, '{"timeStamp": ' + req.body.timeStamp + ', "message": "' + err + '"}');
+					sendErr(req, res, '{"timeStamp": ' + req.body.timeStamp + ', "message": "' + err + '"}');
 				} else {
-					res.send( '{"timeStamp": ' + req.body.timeStamp + ', "message": "ack"}' );
+					sendAck(res, req.body.timeStamp );
 				}
 
 				outstandingOperations--;
 
-				if (outstandingOperations == 0) {
+				if (outstandingOperations === 0) {
 					onCompleteCallback();
 				}
 			}
 		});
 	}
 }
+
+function sendAck(response, timeStamp) {
+	response.send( '{"timeStamp": ' + timeStamp + ', "message": "ack"}' );
+}
+
+function validateOrderProperties( sessionId, timeStamp, itemList) {
+
+	return testIsInteger(sessionId, "sessionId") 
+		+ testIsInteger(timeStamp, "timeStamp") 
+		+ testIsNullOrArray(itemList, "itemList");
+}
+
+function testIsNullOrArray(array, propertyName) {
+
+	if (array) {
+		if (!Array.isArray(array)) {
+			return propertyName + " is not a valid array";
+		}
+	}
+
+	return "";
+}
+
+/*
+ * Test if the given value is an integer, if not return a string representing containing the error.
+ */
+function testIsInteger(value, propertyName) {
+	if (value === undefined) {
+		return "No " + propertyName + " provided.";
+	} else if (typeof(value) !== 'number') {
+		return propertyName + " is not a number.";
+	} else if (value % 1 !== 0) {
+		return propertyName + "  is not an integer.";
+	}
+	return "";
+}
+
 
 /*
  * Login to the back-end using the given user name and password
