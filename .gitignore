@@ -11,6 +11,8 @@
 /[Uu]ser[Ss]ettings/
 /[Bb]in/
 /[Ll]ocalBackEnd/[Nn]ode_modules
+/[Nn]ode_modules/
+/[Ll]ocalBackEnd/[Ss]tressTest/[Pp]ostStressTest/[Bb]in/
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data

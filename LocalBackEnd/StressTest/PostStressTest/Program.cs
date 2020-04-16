@@ -8,6 +8,7 @@ using System.Threading;
 using System.Collections.Generic;
 using PostStressTest.StateMachine;
 using System.Linq;
+using System.Diagnostics;
 
 /// <summary>
 /// Simple stress test program for the back-end server
@@ -25,7 +26,7 @@ namespace PostStressTest
         {
             const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
-            const int maxTimeSeconds = 90;
+            const int maxTimeSeconds = 120;
 
             var log = new Log()
             {
@@ -67,12 +68,20 @@ namespace PostStressTest
                     {
                         using (agent)
                         {
-                            agent.Start();
-
-                            while (agent.Phase == StateMachine.StatePhase.Started)
+                            try
                             {
-                                agent.Update();
-                                await Task.Delay(taskIntervalMS, token);
+                                agent.Start();
+
+                                while (agent.Phase == StateMachine.StatePhase.Started)
+                                {
+                                    agent.Update();
+                                    await Task.Delay(taskIntervalMS, token);
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                Debug.WriteLine("caught unexpected exception " + e);
+                                throw (e);
                             }
                         }
                         agent.Stop();
