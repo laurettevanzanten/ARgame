@@ -131,21 +131,28 @@ namespace PostStressTest
 
         private void TryWriteToTable(string channel, string source, OutputLevel level, string message)
         {
-            if (!_log.TryGetValue(channel, out var queue))
+            try
             {
-                queue = new ConcurrentDictionary<LogEntry, LogEntry>();
-                _log[channel] = queue;
+                if (!_log.TryGetValue(channel, out var queue))
+                {
+                    queue = new ConcurrentDictionary<LogEntry, LogEntry>();
+                    _log[channel] = queue;
+                }
+
+                var newItem = new LogEntry()
+                {
+                    Level = level,
+                    Source = string.IsNullOrEmpty(source) ? UnknownSource : source,
+                    Message = message,
+                    TimeStamp = DateTime.Now,
+                };
+
+                queue[newItem] = newItem;
             }
-
-            var newItem = new LogEntry()
+            catch (Exception e)
             {
-                Level = level,
-                Source = string.IsNullOrEmpty(source) ? UnknownSource : source,
-                Message = message,
-                TimeStamp = DateTime.Now,
-            };
-
-            queue[newItem] = newItem;
+                Debug.WriteLine("caught unexpected exception " + e);
+            }
         }
     }
 }

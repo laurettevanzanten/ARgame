@@ -47,7 +47,7 @@ namespace PostStressTest
             messageAgent.AddStateTransition(loggedOutState, () => {
 
                 // generally speaking login correctly but every now and then do a wrong login
-                if (rng.NextDouble() > 0.2)
+                if (rng.NextDouble() > 0.15)
                 {
                     return login;
                 }
@@ -118,6 +118,9 @@ namespace PostStressTest
 
             // waited for a bit now send it again
             messageAgent.AddStateTransition(loggedInState, () => rng.NextDouble() > 0.2 ? sendOrder : sendFaultyOrder);
+
+            messageAgent.AddStateTransition(sendFaultyOrder, () => loggedInState);
+
 
             // try logging in again
             messageAgent.AddStateTransition(wrongLogin, () => loggedOutState);
@@ -253,8 +256,6 @@ namespace PostStressTest
             {
                 orderMessage.token = s.Context.Resolve<string>(UserTokenId);
                 orderMessage.Randomize(s.Context.Resolve<Random>());
-
-                s.Context.Register(MessageCountId, s.Context.Resolve<int>(MessageCountId) + 1);
 
                 log?.Put(OutputLevel.Info, s.Name, "sending faulty order.");
             };

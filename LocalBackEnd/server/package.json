@@ -1,0 +1,7 @@
+{
+  "name": "laurette-thesis-back-end",
+  "version": "0.0.1",
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  }
+}

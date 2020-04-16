@@ -1,84 +1,43 @@
-var UserCredentials = require("./user-credentials.js");
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const seedrandom = require('seedrandom');
-
 const winston = require('winston');
 const { MESSAGE } = require("triple-beam");
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'laurette-server.log' }),
-    new winston.transports.Console({
-		//
-		// Possible to override the log method of the
-		// internal transports of winston@3.0.0.
-		//
-		log(info, callback) {
-			setImmediate(() => this.emit("logged", info));
-
-			console.log(info[MESSAGE]);
-		
-			if (callback) {
-				callback();
-			}
-		}
-	  })
-  ]
-});
-
 const sqlite3 = require('sqlite3').verbose();
+const backendServerLogic = require('./server/back-end-server');
 
-// open the database
-var sessionsDb = new sqlite3.Database("sessions.db");
+// configure the back-end logic
+backendServerLogic.config({
+	database:  new sqlite3.Database("sessions.db"),
+	logger: winston.createLogger({
+		level: 'info',
+		format: winston.format.json(),
+		transports: [
+		  new winston.transports.File({ filename: 'laurette-server.log' }),
+		  new winston.transports.Console({
+			  log(info, callback) {
+				  setImmediate(() => this.emit("logged", info));
+	  
+				  console.log(info[MESSAGE]);
+			  
+				  if (callback) {
+					  callback();
+				  }
+			  }
+			})
+		]
+	  }),
+})
+
 
 // Create Express app
 const app = express();
 
 const jsonParser = bodyParser.json({limit: '1mb'});
 
-const whitleListDomain = ['http://localhost:8080',
-							// http://alloweddomain.com' is a placeholder
-							'http://alloweddomain.com'];
+const whitleListDomain = ['http://localhost:8080', 'http://placeholderdomain.com'];
 
-
-
-// token can only live for 5 minutes
-const maxTokenAge = 60 * 5;
-var _userCredentials = {};
-
-// how often do we flush the read/write quuees 
-const flushTimeout = 1000;
-
-var _writeQueue = [];
-var _readQueue = [];
-
-var _activeQueue;
-
-
-class WebOperation {
-	constructor(name, request, response) {
-		this.name = name;
-		this.request = request;
-		this.response = response;
-	}
-}
-
-class LoginResponse {
-	constructor(token, session, timeStamp){
-		this.token = token;
-		this.session = session;
-		this.timeStamp = timeStamp;
-	}
-}
-
-/*
- * setup Cross Domain calls
- */
+// setup Cross Domain calls 
 app.use(cors({
   origin: function(origin, callback){
     // allow requests with no origin 
@@ -92,299 +51,19 @@ app.use(cors({
   }
 }));
 
-/*
- * Sends a default page
- */
-app.get('/', (req, res) => res.send('Laurette - Server, thesis v0.001'));
+app.get('/', (req, res) => backendServerLogic.renderDefaultWebPage(req, res)); 
 
-/*
- * Logs the user in based off a user and password (plain text -- we're _really_ not expecting the game to
- * be hacked) 
- */
-app.post('/login', jsonParser, (req, res) => {
-	logger.info(getSource(req) + " logging in as " + req.body.user + ", " + req.body.password); 
-	_readQueue.push( new WebOperation("login",  req,  res ))
-});
+app.post('/login', jsonParser, (req, res) => backendServerLogic.login(req, res));
 
-/*
- * Logs the user out
- */
-app.post('/logout', jsonParser, (req, res) => {
-	logger.info(getSource(req) + " logging out with " + req.body.token); 
+app.post('/logout', jsonParser, (req, res) => backendServerLogic.logout(req, res));
 
-	if (_userCredentials[req.body.token]) {
-		delete _userCredentials[req.body.token];
-	} 
-
-	res.end();
-});
-
-/*
- * Handle a order post.
- */
-app.post('/post-order', jsonParser, function (req, res) {
-
-	logger.info(getSource(req) + " post order with token=" + req.body.token); 
-	
-	var credentials  = _userCredentials[req.body.token];
-	
-	if (req && req.body && credentials) {
-		// get the age of the token and see if it is still valid
-		var now = new Date();
-		var credentialsAge = (now.getTime() - credentials.date.getTime()) / 1000;
-		
-		if (credentialsAge < maxTokenAge) {
-			
-			// update the token's life
-			_userCredentials[req.body.token].date = now;
-
-			var valuesErrors = validateOrderProperties(req.body.sessionId, req.body.timeStamp, req.body.items);
-
-			if (!valuesErrors) {
-				if (req.body.items && req.body.items.length > 0) {
-					_writeQueue.push(new WebOperation("insert-order", req, res));
-				} else {
-					// empty array - don't bother inserting empty sets
-					sendAck(res, req.body.timeStamp);
-				}
-			} else {
-				sendErr(req, res, "post order with invalid values " + valuesErrors);
-			}
-
-		} else {
-			sendErr(req, res, "post order with outdated token, credentials=" + JSON.stringify(credentials));
-			delete _userCredentials[req.body.token];
-		}
-	} else {
-		sendErr(req, res, "invalid request or token provided (token="+ req.body.token +").");
-	}
-});
-
-function sendErr(request, response, message) {
-	logger.error(getSource(request) + ", error " + message);
-			
-	response.statusMessage = message;
-	response.status(400).end();
-}
-
-function getSource(request) {
-	var originSource = request.headers['x-forwarded-for'];
-
-	if (!originSource) {
-		originSource = request.connection.remoteAddress;
-	}
-
-	return originSource ? originSource : "unknown";
-}
-
-function updateQueues() {
-
-	if (_activeQueue === _readQueue) {
-		var temp = _readQueue;
-		_readQueue = [];
-		flushReadQueue(temp, () => {
-			_activeQueue = _writeQueue;
-			setTimeout(updateQueues, flushTimeout );
-		});
-	} else {
-		var temp = _writeQueue;
-		_writeQueue = [];
-		flushWriteQueue(temp, () => {
-			_activeQueue = _readQueue;
-			setTimeout(updateQueues, flushTimeout );
-		});
-	}
-}
-
-function flushReadQueue(queue, onCompleteCallback) {
-
-	if (queue.length > 0) {
-		var outstandingOperations = queue.length;
-
-		for (var i = 0; i < queue.length; i++) {
-			const request = queue[i].request;
-			const response = queue[i].response;
-			
-			login(request.body.user, request.body.password, (errCode, message) => {
-				
-				if (errCode === 0) {
-					response.send(message);
-				} else {
-					sendErr(request, response, message);
-				}
-				outstandingOperations--;
-
-				if (outstandingOperations <= 0) {
-					onCompleteCallback();
-				}
-			});
-		}
-	} else {
-		onCompleteCallback();
-	}
-
-}
-
-function flushWriteQueue(queue, onCompleteCallback) {
-	if (queue.length === 0) {
-		onCompleteCallback();
-	}
-	else {
-		var valuesCollection = [];
-		
-		// combine all insert operations so we can do with only one insert call
-		for (var i = 0; i < queue.length; i++) {
-			var msgBody =  queue[i].request.body;
-			var itemList = JSON.stringify(msgBody.items);
-			var credentials = _userCredentials[msgBody.token];
-
-			valuesCollection.push("(" + credentials.id + "," + msgBody.sessionId + "," + msgBody.timeStamp + ",'" + itemList + "')");			 
-		}
-
-		var outstandingOperations = queue.length;
-
-		insertValues(valuesCollection, (err, message) => {		
-			for (var i = 0; i < queue.length; i++) {
-				var msg = queue[i];
-
-				var res = msg.response;
-				var req = msg.request;
-				
-				if (err) {
-					sendErr(req, res, '{"timeStamp": ' + req.body.timeStamp + ', "message": "' + err + '"}');
-				} else {
-					sendAck(res, req.body.timeStamp );
-				}
-
-				outstandingOperations--;
-
-				if (outstandingOperations === 0) {
-					onCompleteCallback();
-				}
-			}
-		});
-	}
-}
-
-function sendAck(response, timeStamp) {
-	response.send( '{"timeStamp": ' + timeStamp + ', "message": "ack"}' );
-}
-
-function validateOrderProperties( sessionId, timeStamp, itemList) {
-
-	return testIsInteger(sessionId, "sessionId") 
-		+ testIsInteger(timeStamp, "timeStamp") 
-		+ testIsNullOrArray(itemList, "itemList");
-}
-
-function testIsNullOrArray(array, propertyName) {
-
-	if (array) {
-		if (!Array.isArray(array)) {
-			return propertyName + " is not a valid array";
-		}
-	}
-
-	return "";
-}
-
-/*
- * Test if the given value is an integer, if not return a string representing containing the error.
- */
-function testIsInteger(value, propertyName) {
-	if (value === undefined) {
-		return "No " + propertyName + " provided.";
-	} else if (typeof(value) !== 'number') {
-		return propertyName + " is not a number.";
-	} else if (value % 1 !== 0) {
-		return propertyName + "  is not an integer.";
-	}
-	return "";
-}
+app.post('/post-order', jsonParser, (req, res) => backendServerLogic.postOrder(req, res));
 
 
-/*
- * Login to the back-end using the given user name and password
- */
-function login(name, password, callback) {
+// start the server logic
+backendServerLogic.start();
 
-	// login the user
-	sessionsDb.get("select userId from users where name = ? and password = ?", name, password, (err, row) => {
-		if (err ) {
-			callback( -1, "db error (err=" +err+ ")." );
-		} else if (!row) {
-			callback( -1, "user or password " + name + " not found." );
-		}  else {	
-			const id = 	row.userId;	
-			const token = generateToken(id, name, password);
-
-			logger.info("assiging token " + token + " to " + name);
-			
-			_userCredentials[token] = new UserCredentials(id, token, new Date());
-
-			// get the last session the user was working on
-			sessionsDb.get("select max(session) from sessions where userId = ?", id, (maxSessionErr, maxSessionRow) => {
-				if (maxSessionErr) {
-					callback( -1, "error while retrieving max session (err=" + maxSessionErr + ")." );
-				} else { 
-					var maxSession = maxSessionRow["max(session)"];
-
-					if (maxSession) {
-						sessionsDb.get("select max(timeStamp) from sessions where userId = ? and session = ?", id, maxSession,
-							(maxTimeStampErr, maxTimeStampRow) => {
-								if (maxTimeStampErr) {
-									callback( -1, "error while retrieving max timestamp (err=" + maxTimeStampErr + ")." );
-								} else {
-									var maxTimestamp = maxTimeStampRow["max(timeStamp)"];
-
-									if (maxTimestamp) {
-										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, maxTimestamp )));
-									} else {
-										callback( 0, JSON.stringify( new LoginResponse(token, maxSession, -1 )));
-									}
-								}
-							});
-						
-					} else {
-						callback( 0, JSON.stringify( new LoginResponse(token, -1, -1 )));
-					}
-				} 
-			});
-		}
-	});
-}
-
-
-function generateToken(id, user, password) {
-	var seed = id + "-" + user + "-" + password + "-" + new Date().getMilliseconds();
-	var rng = seedrandom(seed);
-	var token = "";
-
-	for (var i = 0; i < 8; i++) {
-		token += Math.floor(rng() * 10);	
-	}
-	return token;
-}
-
-
-/*
- * Insert the properties in a slot for the given user id.
- */
-function insertValues(valuesCollection, callback)
-{	
-	const sqlCall = "insert into sessions values "  + valuesCollection.join();
-	sessionsDb.run(sqlCall, (err) => {
-		if (err) {
-			callback(err, "error while inserting values.");
-		} else {
-			callback(0, "ok");
-		} 
-	});
-}
-
-// Start the Express server
+// start express
 app.listen(3000, () => console.log('Server running on port 3000!'));
 
-// start flushing the read and write queues
-_activeQueue = _readQueue;
-setTimeout(updateQueues, 2000);
+
