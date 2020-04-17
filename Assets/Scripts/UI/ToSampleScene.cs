@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class toSampleScene : MonoBehaviour
+public class ToSampleScene : MonoBehaviour
 {
     public void OnClick()
     {

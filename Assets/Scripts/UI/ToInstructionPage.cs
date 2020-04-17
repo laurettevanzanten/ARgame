@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class toInstructionPage : MonoBehaviour
+public class ToInstructionPage : MonoBehaviour
 {
     public void OnClick ()
     {
