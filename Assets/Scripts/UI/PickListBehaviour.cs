@@ -35,6 +35,10 @@ public class PickListBehaviour : MonoBehaviour
             DisplayOrderList(gameState.CurrentOrderList);
         }
     }
+    public void OnShow()
+    {
+        gameObject.SetActive(true);
+    }
 
     public void DisplayOrderList(List<OrderProperties> orderList)
     {
