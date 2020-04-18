@@ -1,7 +1,7 @@
 ﻿
-* clean up and document back-end code
-* test back-end limit
-
+* add postgres
+* send keep-alive
+* get table
 * send wrong token with order
 * Add & Catch state errors
 * Add error retry / fail
@@ -15,3 +15,5 @@
 [done] Test with 50 users for x time
 [done] wrong log in name
 [done] send wrong order format
+[done] clean up and document back-end code
+[done] test back-end limit

@@ -168,7 +168,7 @@ function flushReadQueue(queue, onCompleteCallback) {
 			const request = queue[i].request;
 			const response = queue[i].response;
 			
-			login(request.body.user, request.body.password, (errCode, message) => {
+			loginUser(request.body.user, request.body.password, (errCode, message) => {
 				
 				if (errCode === 0) {
 					response.send(message);
@@ -208,9 +208,7 @@ function flushWriteQueue(queue, onCompleteCallback) {
 			valuesCollection.push("(" + credentials.id + "," + msgBody.sessionId + "," + msgBody.timeStamp + ",'" + itemList + "')");			 
 		}
 
-		var outstandingOperations = queue.length;
-
-		insertValues(valuesCollection, (err, message) => {		
+		_sessionDb.insertValues(valuesCollection.join(), (err, msg) => {
 			for (var i = 0; i < queue.length; i++) {
 				var msg = queue[i];
 
@@ -222,13 +220,9 @@ function flushWriteQueue(queue, onCompleteCallback) {
 				} else {
 					sendAck(res, req.body.timeStamp );
 				}
-
-				outstandingOperations--;
-
-				if (outstandingOperations === 0) {
-					onCompleteCallback();
-				}
 			}
+			
+			onCompleteCallback();
 		});
 	}
 }
@@ -302,40 +296,32 @@ function testIsInteger(value, propertyName) {
 	return "";
 }
 
-
 /*
  * Login to the back-end using the given user name and password
  */
-function login(name, password, callback) {
+function loginUser(name, password, callback) {
 
-	// login the user
-	_sessionDb.get("select userId from users where name = ? and password = ?", name, password, (err, row) => {
-		if (err ) {
-			callback( -1, "db error (err=" +err+ ")." );
-		} else if (!row) {
-			callback( -1, "user or password " + name + " not found." );
+	_sessionDb.login(name, password, (err, userId) => {
+		if (err) {
+			callback( -1, `db error (err=${err}).`);
+		} else if (!userId) {
+			callback( -1, `user or password ${name} not found.` );
 		}  else {	
-			const id = 	row.userId;	
-			const token = generateToken(id, name, password);
+			const token = generateToken(userId, name, password);
 
-			_logger.info("assiging token " + token + " to " + name);
-			
-			_userCredentials[token] = new UserCredentials(id, token, new Date());
-
-			tryRetrieveSessionAndTimeStamp(id, token, callback);
+			_logger.info(`assigning token ${token} to ${name}`);			
+			_userCredentials[token] = new UserCredentials(userId, token, new Date());
+			tryRetrieveSessionAndTimeStamp(userId, token, callback);
 		}
 	});
 }
 
 function tryRetrieveSessionAndTimeStamp(userId, userToken, callback) {
 	// get the last session the user was working on
-	_sessionDb.get("select max(session) from sessions where userId = ?", userId, (maxSessionErr, maxSessionRow) => {
-		if (maxSessionErr) {
-			callback( -1, "error while retrieving max session (err=" + maxSessionErr + ")." );
+	_sessionDb.getMaxSession(userId, (err, maxSession) => {
+		if (err) {
+			callback( -1, `error while retrieving max session (err= ${err} ).` );
 		} else { 
-			// note the syntac assumes a SQLite3 response 
-			var maxSession = maxSessionRow["max(session)"];
-
 			// does the user have a previously started session ?
 			if (maxSession) {
 				// try to retrieve the last timestamp 
@@ -349,21 +335,17 @@ function tryRetrieveSessionAndTimeStamp(userId, userToken, callback) {
 
 
 function tryToRetrieveTimeStamp(userId, userToken, maxSession, callback) {
-	_sessionDb.get("select max(timeStamp) from sessions where userId = ? and session = ?", userId, maxSession,
-		(maxTimeStampErr, maxTimeStampRow) => {
-			if (maxTimeStampErr) {
-				callback( -1, "error while retrieving max timestamp (err=" + maxTimeStampErr + ")." );
+	_sessionDb.getMaxTimeStamp(userId, maxSession, (err, maxTimeStamp) => {
+		if (err) {
+			callback( -1, "error while retrieving max timestamp (err=" +err + ")." );
+		} else {
+			if (maxTimeStamp) {
+				callback( 0, JSON.stringify( new LoginResponse(userToken, maxSession, maxTimeStamp )));
 			} else {
-				var maxTimestamp = maxTimeStampRow["max(timeStamp)"];
-
-				if (maxTimestamp) {
-					callback( 0, JSON.stringify( new LoginResponse(userToken, maxSession, maxTimestamp )));
-				} else {
-					callback( 0, JSON.stringify( new LoginResponse(userToken, maxSession, -1 )));
-				}
+				callback( 0, JSON.stringify( new LoginResponse(userToken, maxSession, -1 )));
 			}
 		}
-	);
+	});
 }
 
 /** Generates a unique randomized token off the user id a*/
@@ -377,20 +359,3 @@ function generateToken(id, user, password) {
 	}
 	return token;
 }
-
-/*
- * Insert the properties in a slot for the given user id.
- */
-function insertValues(valuesCollection, callback)
-{	
-	const sqlCall = "insert into sessions values "  + valuesCollection.join();
-	_sessionDb.run(sqlCall, (err) => {
-		if (err) {
-			callback(err, "error while inserting values.");
-		} else {
-			callback(0, "ok");
-		} 
-	});
-}
-
-

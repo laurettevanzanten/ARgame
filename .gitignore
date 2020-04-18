@@ -10,7 +10,8 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 /[Bb]in/
-/[Ll]ocalBackEnd/[Nn]ode_modules
+/[Ll]ocalBackEnd/[Nn]ode_modules/
+/[Ll]ocalBackEnd/[Ss]erver/[Nn]ode_modules/
 /[Nn]ode_modules/
 /[Ll]ocalBackEnd/[Ss]tressTest/[Pp]ostStressTest/[Bb]in/
 
@@ -95,3 +96,7 @@ LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dl
 LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
 LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.csprojAssemblyReference.cache
 LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.csproj.CoreCompileInputs.cache
+LocalBackEnd/StressTest/PostStressTest/bin/Debug/netcoreapp2.1/PostStressTest.dll
+*.cache
+LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.csprojAssemblyReference.cache
+LocalBackEnd/StressTest/PostStressTest/obj/Debug/netcoreapp2.1/PostStressTest.dll
