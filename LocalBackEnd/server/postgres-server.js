@@ -3,9 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const winston = require('winston');
 const { MESSAGE } = require("triple-beam");
-//const databaseAdapter = require('./server/sqlite3-adapter');
-const databaseAdapter = require('./server/postgres-adapter');
-const backendServerLogic = require('./server/back-end-server');
+const databaseAdapter = require('./postgres-adapter');
+const backendServerLogic = require('./back-end-server');
 
 const logger = winston.createLogger({
 	level: 'info',
@@ -32,7 +31,7 @@ backendServerLogic.config({
 	logger: logger
 })
 
-const whitleListDomain = ['http://localhost:8080', 'http://placeholderdomain.com'];
+const whitleListDomain = ['http://localhost:8080', '213.127.49.114'];
 
 const corsSetup = cors({
 	origin: function(origin, callback){

@@ -26,7 +26,7 @@ namespace PostStressTest
         {
             const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
-            const int maxTimeSeconds = 120;
+            const int maxTimeSeconds = 90;
 
             var log = new Log()
             {
