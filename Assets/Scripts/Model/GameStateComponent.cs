@@ -42,7 +42,7 @@ public class GameStateComponent : MonoBehaviour
     public void Start()
     {
         Instance = this;
-        startTime = Time.time;
+        
 
         Orders = CSVParser.ParseGrid(orders, (value, x, y) => new OrderProperties(value));
 
@@ -67,7 +67,12 @@ public class GameStateComponent : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
 
     }
-    
+    public void StartClock()
+    {
+        startTime = Time.time;
+    }
+
+
 
     public GameObject ResolveBoxObject(OrderProperties properties)
     {
