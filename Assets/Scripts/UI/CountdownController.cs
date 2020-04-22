@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class CountdownController : MonoBehaviour
 {
     public int countdownTime;
     public Text countdownDisplay;
+    public UnityEvent countdownCallback;
 
     private void Start()
     {
@@ -29,7 +31,8 @@ public class CountdownController : MonoBehaviour
 
 
         yield return new WaitForSeconds(1f);
-
+        countdownCallback.Invoke();
         countdownDisplay.gameObject.SetActive(false);
+
     }
 }
