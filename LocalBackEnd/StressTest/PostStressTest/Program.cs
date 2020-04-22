@@ -24,7 +24,8 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const string endPoint = "http://localhost:3000";
+            const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
+            // const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
             const int maxTimeSeconds = 90;
 
@@ -59,7 +60,7 @@ namespace PostStressTest
                 var token = cancelSource.Token;
                 var userName = "user" + (i + 1);
                 var password = "pwd" + (i + 1);
-                var agent = AgentFactory.CreateHttpMessageAgent(ioc, endPoint, userName, password);
+                var agent = AgentFactory.CreateHttpMessageAgent(ioc, endPoint, agentCount, userName, password);
 
                 agentTaskList.Add((
                     agent,

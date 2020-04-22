@@ -22,23 +22,24 @@ namespace PostStressTest
         /// <param name="user"></param>
         /// <param name="password"></param>
         /// <returns></returns>
-        public static HttpMessageAgent CreateHttpMessageAgent(IoC ioc, string endPoint, string user, string password)
+        public static HttpMessageAgent CreateHttpMessageAgent(IoC ioc, string endPoint, int maxAgents, string user, string password)
         {
             var messageAgent = new HttpMessageAgent();
 
             var rng = ioc.Resolve<Random>();
             var log = ioc.Resolve<Log>();
 
-
             var login = messageAgent.AddState<HttpMessageState>((s) => ConfigureLoginState(s, log, endPoint, user, password));
             var wrongLogin = messageAgent.AddState<HttpMessageState>((s) => ConfigurewrongLoginState(s, log, endPoint, "foo", "barr"));
 
             var sendOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendOrderState(s, log, rng, endPoint, user));
             var sendFaultyOrder = messageAgent.AddState<HttpMessageState>((s) => ConfigureSendFaultyOrderState(s, log, rng, endPoint, user));
+            var getRandomUserOrders = messageAgent.AddState<HttpMessageState>((s) => ConfigureGetUserOrdersMessage(s, log, endPoint, maxAgents, rng));
+            var heartbeat = messageAgent.AddState<HttpMessageState>((s) => ConfigureHeartbeatMessage(s, log, endPoint, user));
 
             var logout = messageAgent.AddState<HttpMessageState>((s) => ConfigureLogoutState(s, log, endPoint, user));
 
-            var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
+            var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 4000, 6000));
             var loggedInState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
             
             messageAgent.CurrentState = loggedOutState;
@@ -47,7 +48,7 @@ namespace PostStressTest
             messageAgent.AddStateTransition(loggedOutState, () => {
 
                 // generally speaking login correctly but every now and then do a wrong login
-                if (rng.NextDouble() > 0.15)
+                if (rng.NextDouble() > 0.1)
                 {
                     return login;
                 }
@@ -116,11 +117,24 @@ namespace PostStressTest
                 }                
             });
 
-            // waited for a bit now send it again
-            messageAgent.AddStateTransition(loggedInState, () => rng.NextDouble() > 0.2 ? sendOrder : sendFaultyOrder);
+            // waited for a bit now send an order, faulty order or request some user's 
+            messageAgent.AddStateTransition(loggedInState, () =>
+            {
+                if (rng.NextDouble() > 0.1)
+                {
+                    if (rng.NextDouble() > 0.4)
+                    {
+                        return sendOrder;
+                    }
+
+                    return rng.NextDouble() > 0.4 ? heartbeat: getRandomUserOrders;
+                }
+                return sendFaultyOrder;
+            });
 
             messageAgent.AddStateTransition(sendFaultyOrder, () => loggedInState);
-
+            messageAgent.AddStateTransition(getRandomUserOrders, () => loggedInState);
+            messageAgent.AddStateTransition(heartbeat, () => loggedInState);
 
             // try logging in again
             messageAgent.AddStateTransition(wrongLogin, () => loggedOutState);
@@ -204,6 +218,53 @@ namespace PostStressTest
             return s;
         }
 
+        private static HttpMessageState ConfigureGetUserOrdersMessage(
+            HttpMessageState s, 
+            Log log, 
+            string endPoint, 
+            int userCount,
+            Random rng,
+            string adminName = "admin",
+            string password = "__default")
+        {
+             var getOrdersMessage = new GetUserOrdersMessage()
+             {
+                 userId = rng.Next(1, userCount),
+                 adminName = adminName,
+                 password = password,
+             };
+
+            s.Name = userCount + ", HttpMessageState::getUserOrders";
+            s.Uri = endPoint + "/get-user-orders";
+            s.Message = getOrdersMessage;
+            s.SetupMessage = (msg) =>
+            {
+                getOrdersMessage.userId = rng.Next(1, userCount);
+                log?.Put(OutputLevel.Info, s.Name, "requesting orders of user " + getOrdersMessage.userId);
+            };
+            s.ProcessResponse = async (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        var serverResponse = JsonSerializer.Deserialize<OrderMessageResponse[]>(message);
+
+                        log?.Put(OutputLevel.Info, "For userId " +  getOrdersMessage.userId + " received orders " + message );
+                    }
+                }
+                else
+                {
+                    log?.Put(OutputLevel.Error, s.Name, "Error requesting user orders for user " + getOrdersMessage.userId 
+                                + " - " + response.ReasonPhrase);
+                }
+            };
+            s.SendMethod = RestMethod.POST;
+            return s;
+        }
+
         private static HttpMessageState ConfigureSendOrderState(HttpMessageState s, Log log, Random rng, string endPoint, string user)
         {
             var orderMessage = OrderMessage.GenerateRandomMessage("-1", rng);
@@ -239,6 +300,47 @@ namespace PostStressTest
                 else
                 {
                     log?.Put(OutputLevel.Error, s.Name, "send order with " + orderMessage.items.Length + " items, received error code.");
+                }
+            };
+            s.SendMethod = RestMethod.POST;
+            return s;
+        }
+
+        private static HttpMessageState ConfigureHeartbeatMessage(HttpMessageState s, Log log, string endPoint, string user)
+        {
+            var heartbeatMessage = new HeartbeatMessage();
+
+            s.Name = user + ", HttpMessageState::heartbeat";
+            s.Uri = endPoint + "/heartbeat";
+            s.Message = heartbeatMessage;
+            s.SetupMessage = (msg) =>
+            {
+                heartbeatMessage.token = s.Context.Resolve<string>(UserTokenId);
+                heartbeatMessage.timeStamp = heartbeatMessage.timeStamp + 1;
+
+                s.Context.Register(MessageCountId, s.Context.Resolve<int>(MessageCountId) + 1);
+
+                log?.Put(OutputLevel.Info, s.Name, "sending heartbeat.");
+            };
+            s.ProcessResponse = async (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    var message = await response.Content.ReadAsStringAsync();
+
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        var serverResponse = JsonSerializer.Deserialize<ServerResponse>(message);
+
+                        if (serverResponse.timeStamp == heartbeatMessage.timeStamp)
+                        {
+                            s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
+                        }
+                    }
+                }
+                else
+                {
+                    log?.Put(OutputLevel.Error, s.Name, "send heartbeat received error code.");
                 }
             };
             s.SendMethod = RestMethod.POST;

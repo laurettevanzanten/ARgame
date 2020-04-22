@@ -71,14 +71,23 @@ namespace PostStressTest.StateMachine
 
                 if (CurrentState.Phase == StatePhase.Stopped)
                 {
-                    CurrentState = _stateMachine[CurrentState]();
-
-                    if (CurrentState != null)
+                    if (_stateMachine.ContainsKey(CurrentState))
                     {
-                        CurrentState.Start();
+                        // get the next state
+                        CurrentState = _stateMachine[CurrentState]();
+
+                        if (CurrentState != null)
+                        {
+                            CurrentState.Start();
+                        }
+                        else
+                        {
+                            Stop();
+                        }
                     }
                     else
                     {
+                        // current state has no follow up
                         Stop();
                     }
                 }

@@ -1,8 +1,4 @@
 ﻿
-* add postgres
-* send keep-alive
-* get table
-* send wrong token with order
 * Add & Catch state errors
 * Add error retry / fail
 
@@ -17,3 +13,9 @@
 [done] send wrong order format
 [done] clean up and document back-end code
 [done] test back-end limit
+[done] add postgres
+[done] add to Heroku
+[done] get orders
+[done] refactor - add utility and wrap invokes
+[done] send keep-alive
+[done[ send wrong token with order
