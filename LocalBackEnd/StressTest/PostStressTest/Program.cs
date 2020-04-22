@@ -25,7 +25,7 @@ namespace PostStressTest
         static void Main(string[] args)
         {
             const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
-            // const string endPoint = "http://localhost:3000";
+            //const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
             const int maxTimeSeconds = 90;
 
@@ -45,6 +45,7 @@ namespace PostStressTest
 
             var messageCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.MessageCountId));
             var ackCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.AckCountId));
+            var errors = agentTaskList.Select(tuple => tuple.agent.AgentContext.Resolve<List<string>>(AgentFactory.ErrorId));
 
             log.FlushCSV("stress-test.csv");
         }

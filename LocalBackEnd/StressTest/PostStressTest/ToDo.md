@@ -1,6 +1,4 @@
-﻿
-* Add & Catch state errors
-* Add error retry / fail
+﻿write doc to Govert
 
 [done] Add log out / log in 
 [done] Add logging - stress tests done
@@ -18,4 +16,5 @@
 [done] get orders
 [done] refactor - add utility and wrap invokes
 [done] send keep-alive
-[done[ send wrong token with order
+[done] send wrong token with order
+[done] Add & Catch state errors
