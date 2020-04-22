@@ -1,2 +1,2 @@
-create table sessions(userId int, session tinyInt, timeStamp int, jsonText varchar);   
+create table sessions(userId int, session int, timeStamp int, jsonText varchar);   
 create table users(userId int, name varchar, password varchar);
