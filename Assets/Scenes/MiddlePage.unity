@@ -199,7 +199,7 @@ GameObject:
   - component: {fileID: 725440222}
   - component: {fileID: 725440221}
   m_Layer: 5
-  m_Name: Welcome Message
+  m_Name: Instruction Message
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -242,10 +242,16 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Thank you for taking the time to participate in my experiment!\n\nThis
-    experiment exists of two parts and will take approximately 40 minutes\nPART I\nGame
-    \nQuestionnaire \n\nPART 2\nGame \nQuestionnaire \n\nNow please watch the instruction
-    video, afterwards click the button below to start the game \n\n"
+  m_text: 'That was part 1!
+
+    You may now fill in the questionnaire (use your
+    userID)
+
+    After completing the first part of the questionnaire, you can return
+    to this screen
+
+
+    Click the button below to go to the second part of the experiment'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -290,7 +296,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: 167
+  m_firstOverflowCharacterIndex: -1
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -314,12 +320,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 725440221}
-    characterCount: 291
+    characterCount: 223
     spriteCount: 0
-    spaceCount: 55
-    wordCount: 46
+    spaceCount: 41
+    wordCount: 41
     linkCount: 0
-    lineCount: 14
+    lineCount: 6
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -357,9 +363,8 @@ GameObject:
   - component: {fileID: 999648394}
   - component: {fileID: 999648393}
   - component: {fileID: 999648392}
-  - component: {fileID: 999648391}
   m_Layer: 5
-  m_Name: Start The Game Button
+  m_Name: Second Part Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -385,18 +390,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 70}
   m_SizeDelta: {x: 300, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &999648391
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 999648389}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 594314551d5eeeb46adbc0f33dda6d18, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &999648392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -440,12 +433,12 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 999648391}
-        m_MethodName: OnClick
+      - m_Target: {fileID: 999648389}
+        m_MethodName: 
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgumentAssemblyTypeName: 
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -642,7 +635,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start the game
+  m_text: To the second part
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
@@ -711,10 +704,10 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 1704537449}
-    characterCount: 14
+    characterCount: 18
     spriteCount: 0
-    spaceCount: 2
-    wordCount: 3
+    spaceCount: 3
+    wordCount: 4
     linkCount: 0
     lineCount: 1
     pageCount: 1
