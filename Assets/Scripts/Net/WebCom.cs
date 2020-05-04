@@ -3,9 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
+
+public delegate void MessageCallback(string serverReplyText, long responseCode);
+
+public class MessageInfo
+{
+    public int timeStamp;
+    public string route;
+    public object message;
+    public MessageCallback callback;
+}
+
+
 public class WebCom : MonoBehaviour
 {
-    public string url = "http://localhost:3000/post-session-db";
+    public string url = "http://localhost:3000/";
     public string userName = "admin";
     public string password = "foo";
     public int    sessionId = 0;
@@ -13,8 +25,12 @@ public class WebCom : MonoBehaviour
     public float timeout = 30.0f;
     public float sendInterval = 1.0f;
 
-    private List<OrderMessage> messageQueue = new List<OrderMessage>();
-    private List<OrderMessage> sendQueue  = new List<OrderMessage>();
+    public string UserToken { get; set; }
+
+    private List<MessageInfo> messageQueue = new List<MessageInfo>();
+    private List<MessageInfo> sendQueue  = new List<MessageInfo>();
+
+    private int timeStamp = 0;
 
     private float lastSendTime = 0;
 
@@ -56,26 +72,50 @@ public class WebCom : MonoBehaviour
             items = items.ToArray(),
         };
 
-        messageQueue.Add(message);
+        messageQueue.Add(new MessageInfo() { message = message, route = "post-order", timeStamp = timeStamp });
+        timeStamp++;
         Debug.Log("order added to message queue, " + messageQueue.Count + " items in queue");
 
     }
 
-    private void FlushQueue(List<OrderMessage> queue)
+    public void Login(string userName, string password, MessageCallback callback)
+    {
+        messageQueue.Add(new MessageInfo()
+        {
+            message = new LoginMessage()
+            {
+                password = password,
+                user = userName
+            },
+            route = "login",
+            timeStamp = timeStamp,
+            callback = callback
+        });
+
+        timeStamp++;
+
+        Debug.Log("login added to message queue, " + messageQueue.Count + " items in queue");
+    }
+
+    private void FlushQueue(List<MessageInfo> queue)
     {
         Debug.Log("sending " + queue.Count + "items");
         for (int i = 0; i < queue.Count; i++)
         {
-            PostASync(url, JsonUtility.ToJson(queue[i]));
+            var messageInfo = queue[i];
+            PostASync(url + "/" + messageInfo.route, 
+                        JsonUtility.ToJson(messageInfo.message),
+                        messageInfo.timeStamp,
+                        messageInfo.callback);
         }
     }
 
-    public void PostASync(string uri, string json)
+    public void PostASync(string uri, string json, int timeStamp, MessageCallback callback)
     {
-        StartCoroutine(PostRequest(uri, json));
+        StartCoroutine(PostRequest(uri, json, timeStamp, callback));
     }
 
-    private int FindMessageIndex(int timeStamp, List<OrderMessage> queue)
+    private int FindMessageIndex(int timeStamp, List<MessageInfo> queue)
     {
         for (int i = 0; i < queue.Count; i++)
         {
@@ -88,10 +128,14 @@ public class WebCom : MonoBehaviour
         return -1;
     }
 
-    private IEnumerator PostRequest(string url, string json)
+    private IEnumerator PostRequest(string url, string json, int timeStamp, MessageCallback callback)
     {
+        Debug.Log("[" + timeStamp + "] sending " + json + " to " + url);
+
         var uwr = new UnityWebRequest(url, "POST");
+
         byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(json);
+
         uwr.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
         uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
         uwr.SetRequestHeader("Content-Type", "application/json");
@@ -100,25 +144,23 @@ public class WebCom : MonoBehaviour
 
         if (uwr.isNetworkError)
         {
+            callback.Invoke("error", uwr.responseCode);
             Debug.Log("Error While Sending: " + uwr.error);
         }
         else
         {
-            var response = JsonUtility.FromJson<ServerReply>(uwr.downloadHandler.text);
-            var index = FindMessageIndex(response.timeStamp, sendQueue);
+            callback(uwr.downloadHandler.text,  uwr.responseCode);
+
+            var index = FindMessageIndex(timeStamp, sendQueue);
 
             if (index == -1)
             {
-                Debug.LogError("Client error, cannot resolve message with index " + response.timeStamp);
+                Debug.LogError("Client error, cannot resolve message with index " + timeStamp);
             }
-            else if (response.errorCode == 0)
+            else 
             {
                 sendQueue.RemoveAt(index);
-                Debug.Log("ack " + response.timeStamp + ", " + sendQueue.Count + " messages in send queue remaining");
-            }
-            else
-            {
-                Debug.LogError("Server error (" + response.errorCode + "(" + response.timeStamp + "), '" + response.message + "') when sending " + sendQueue[index]);
+                Debug.Log("ack " + timeStamp + ", " + sendQueue.Count + " messages in send queue remaining");
             }
         }
     }
