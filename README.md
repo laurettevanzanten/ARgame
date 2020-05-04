@@ -1,1 +1,6 @@
-# hello
+1. "LogInPage", here the user can login, so we know who is playing (when person adds the correct combination of username and password and clicks a button --> next page) 
+2. "FrontPage", here a small overview of the game is given + instructions how to watch the video (when person clicks button --> next page) 
+3. "Sample Scene", this is the information upfront scene (when the countdown clocks hits 0.00 --> next page)
+4. "MiddlePage", a middle page between the two games, it is stated that player needs to fill in the questionnaire, when he clicks a button --> next page) 
+5. "GradualScene", this is the gradual information scene (when the countdown clocks hits 0.00 --> next page)
+6. "EndPage", similar to middle page, it is stated that the player has to fill in the 2nd part of the questionnaire and that he can close the window. (this is the final page) 
