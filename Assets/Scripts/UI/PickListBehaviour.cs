@@ -12,6 +12,9 @@ public class PickListBehaviour : MonoBehaviour
     public string selectedItemOrderColor = "#42EDFF";
     public string itemOrderColor = "#A0A0A0";
 
+    public bool showAllOrderLines = true;
+    public string headerFormat = "Orderline ({0}/{1})";
+
 
     private int orderListIndex = -1;
     private int orderLineIndex = -1;
@@ -51,24 +54,40 @@ public class PickListBehaviour : MonoBehaviour
             var gameState = GameStateComponent.Instance;
             var builder = new StringBuilder();
 
-            for (int i = 0; i < orderList.Count; ++i) 
+            if (showAllOrderLines)
             {
-                var orderProperties = orderList[i];
-                var item = gameState.ResolveItemName(orderProperties);
-
-
-                builder.Append("<color=");
-                builder.Append(i == gameState.CurrentOrderLine ? selectedItemOrderColor : itemOrderColor);
-                builder.Append(">");
-
-                builder.Append(orderProperties.ToString(item));
-
-                builder.Append("\n");
+                for (int i = 0; i < orderList.Count; ++i)
+                {
+                    var itemColor = i == gameState.CurrentOrderLine ? selectedItemOrderColor : itemOrderColor;
+                    BuildOrderLineText(orderList[i], builder, gameState, itemColor);
+                }
+            }
+            else
+            {
+                BuildOrderLineText(orderList[gameState.CurrentOrderLine], builder, gameState, itemOrderColor);
             }
 
-            textComponent.text = "<color=" + headerColor + "><size=" + headerFontSize + "><u>Pick list:</u></size>\n"
-                + "<size=" + itemFontSize + ">" + builder.ToString() + "</size>";
+            var headerText = string.Format(headerFormat, gameState.CurrentOrderLine+1, orderList.Count);
 
+            textComponent.text = 
+                "<color=" + headerColor + "><size=" + headerFontSize + ">" 
+                    + "<u>" + headerText + "</u></size>\n"
+                + "<size=" + itemFontSize + ">" 
+                    + builder.ToString() 
+                + "</size>";
         }
+    }
+
+    private void BuildOrderLineText(OrderProperties orderProperties, StringBuilder builder, GameStateComponent gameState, string itemColor)
+    {
+        var item = gameState.ResolveItemName(orderProperties);
+
+        builder.Append("<color=");
+        builder.Append(itemColor);
+        builder.Append(">");
+
+        builder.Append(orderProperties.ToString(item));
+
+        builder.Append("\n");
     }
 }
