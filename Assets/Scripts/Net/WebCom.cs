@@ -34,6 +34,29 @@ public class WebCom : MonoBehaviour
 
     private float lastSendTime = 0;
 
+    void Awake()
+    {
+        var others = GameObject.FindGameObjectsWithTag("WebCom");
+
+        for (int i = 0; others != null && i < others.Length; i++)
+        {
+            if (others[i] != gameObject)
+            {
+                if (!string.IsNullOrEmpty(UserToken))
+                {
+                    Destroy(others[i]);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                    break;
+                }
+            }
+        }
+
+        DontDestroyOnLoad(gameObject);
+    }
+
     public void Update()
     {
         if (sendQueue.Count > 0)
@@ -146,10 +169,11 @@ public class WebCom : MonoBehaviour
         {
             callback.Invoke("error", uwr.responseCode);
             Debug.Log("Error While Sending: " + uwr.error);
+            callback(uwr.error, uwr.responseCode);
         }
         else
         {
-            callback(uwr.downloadHandler.text,  uwr.responseCode);
+            callback(uwr.downloadHandler.text, uwr.responseCode);
 
             var index = FindMessageIndex(timeStamp, sendQueue);
 
