@@ -2,7 +2,7 @@
 {
     public class ServerResponse
     {
-        public int timeStamp { get; set; }
+        //public int timeStamp { get; set; }
         public string message { get; set; }
     }
 }

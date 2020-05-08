@@ -7,6 +7,6 @@ public class LoginResponse
 
     public int session;
 
-    public int timeStamp;
+    public float timeStamp;
 }
 

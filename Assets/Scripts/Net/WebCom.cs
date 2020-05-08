@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Assets.Scripts.Model;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -26,17 +27,18 @@ public class WebCom : MonoBehaviour
     public float sendInterval = 1.0f;
 
     public string UserToken { get; set; }
+    public float SessionTime { get; set; }
 
     private List<MessageInfo> messageQueue = new List<MessageInfo>();
     private List<MessageInfo> sendQueue  = new List<MessageInfo>();
 
-    private int timeStamp = 0;
+    private int messageAckId = 0;
 
     private float lastSendTime = 0;
 
     void Awake()
     {
-        var others = GameObject.FindGameObjectsWithTag("WebCom");
+        var others = GameObject.FindGameObjectsWithTag(Tags.WebComTag);
 
         for (int i = 0; others != null && i < others.Length; i++)
         {
@@ -83,22 +85,19 @@ public class WebCom : MonoBehaviour
         }
     }
 
-
     public void PostOrder(List<CollectedItem> items)
     {
         var message = new OrderMessage()
         {
-            user = userName,
-            password = password,
+            token = UserToken,
             sessionId = sessionId,
-            timeStamp = (int)Time.time,
+            timeStamp = Time.time,
             items = items.ToArray(),
         };
 
-        messageQueue.Add(new MessageInfo() { message = message, route = "post-order", timeStamp = timeStamp });
-        timeStamp++;
+        messageQueue.Add(new MessageInfo() { message = message, route = "post-order", timeStamp = messageAckId });
+        messageAckId++;
         Debug.Log("order added to message queue, " + messageQueue.Count + " items in queue");
-
     }
 
     public void Login(string userName, string password, MessageCallback callback)
@@ -111,11 +110,11 @@ public class WebCom : MonoBehaviour
                 user = userName
             },
             route = "login",
-            timeStamp = timeStamp,
+            timeStamp = messageAckId,
             callback = callback
         });
 
-        timeStamp++;
+        messageAckId++;
 
         Debug.Log("login added to message queue, " + messageQueue.Count + " items in queue");
     }
@@ -168,14 +167,20 @@ public class WebCom : MonoBehaviour
         if (uwr.isNetworkError)
         {
             callback.Invoke("error", uwr.responseCode);
+
             Debug.Log("Error While Sending: " + uwr.error);
             callback(uwr.error, uwr.responseCode);
         }
         else
         {
-            callback(uwr.downloadHandler.text, uwr.responseCode);
+            if (callback != null)
+            {
+                callback(uwr.downloadHandler.text, uwr.responseCode);
+            }
 
             var index = FindMessageIndex(timeStamp, sendQueue);
+
+            sendQueue.RemoveAt(index);
 
             if (index == -1)
             {
@@ -183,7 +188,6 @@ public class WebCom : MonoBehaviour
             }
             else 
             {
-                sendQueue.RemoveAt(index);
                 Debug.Log("ack " + timeStamp + ", " + sendQueue.Count + " messages in send queue remaining");
             }
         }

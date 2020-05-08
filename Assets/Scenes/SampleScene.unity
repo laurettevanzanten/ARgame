@@ -254,7 +254,6 @@ GameObject:
   m_Component:
   - component: {fileID: 475437816}
   - component: {fileID: 475437815}
-  - component: {fileID: 475437817}
   - component: {fileID: 475437818}
   m_Layer: 0
   m_Name: GameState
@@ -572,24 +571,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &475437817
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 475437814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b77cb00314b245d40adfa637f7f5ebcf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  url: http://localhost:3000/post-session-db
-  userName: admin
-  password: foo
-  sessionId: 0
-  timeout: 60
-  sendInterval: 1
 --- !u!82 &475437818
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1709,6 +1690,8 @@ MonoBehaviour:
   headerColor: '#000000'
   selectedItemOrderColor: '#42EDFF'
   itemOrderColor: '#A0A0A0'
+  showAllOrderLines: 1
+  headerFormat: Orderline ({0}/{1})
 --- !u!1 &1541808062
 GameObject:
   m_ObjectHideFlags: 0

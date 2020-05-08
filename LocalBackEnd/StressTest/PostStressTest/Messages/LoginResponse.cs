@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PostStressTest.Messages
+﻿namespace PostStressTest.Messages
 {
     public class LoginResponse
     {
@@ -10,6 +6,6 @@ namespace PostStressTest.Messages
 
 		public int session { get; set; }
 
-        public int timeStamp { get; set; }
+        public float timeStamp { get; set; }
     }
 }

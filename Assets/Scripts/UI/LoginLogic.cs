@@ -99,6 +99,7 @@ public class LoginLogic : MonoBehaviour
             webCom.sessionId = response.session;
             webCom.userName = nameField.text;
             webCom.password = passwordField.text;
+            webCom.SessionTime = response.timeStamp;
             Debug.Log("Loading scene " + nextScene);
             SceneManager.LoadScene(nextScene);
         }
