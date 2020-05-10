@@ -5,14 +5,14 @@ namespace PostStressTest.Messages
     public class OrderMessage
     {
         public string token { get; set; }
-        public int sessionId { get; set; }
-        public int timeStamp { get; set; }
+        public int scene { get; set; }
+        public float timeStamp { get; set; }
         public Coordinate[] items { get; set; }
 
         public OrderMessage Randomize(Random rng)
         {
             items = GenerateRandomItems(rng);
-            sessionId = rng.Next(0, 2);
+            scene = rng.Next(0, 2);
             timeStamp = rng.Next(0, 900);
             return this;
         }

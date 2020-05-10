@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameStateComponent : MonoBehaviour
 {
@@ -81,8 +82,18 @@ public class GameStateComponent : MonoBehaviour
         }
 
         audioSource = GetComponent<AudioSource>();
+    }
+
+    public void Update()
+    {
+        if (TimeRemaining <= 0)
+        {
+            SceneManager.LoadScene("MiddlePage");
+        }
 
     }
+
+
     public void StartClock()
     {
         startTime = Time.time;

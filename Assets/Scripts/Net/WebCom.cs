@@ -9,12 +9,11 @@ public delegate void MessageCallback(string serverReplyText, long responseCode);
 
 public class MessageInfo
 {
-    public int timeStamp;
+    public int ackId;
     public string route;
     public object message;
     public MessageCallback callback;
 }
-
 
 public class WebCom : MonoBehaviour
 {
@@ -25,6 +24,12 @@ public class WebCom : MonoBehaviour
 
     public float timeout = 30.0f;
     public float sendInterval = 1.0f;
+
+    /// <summary>
+    /// No messages will be send to the back-end when the user name equals
+    /// the "guest" name.
+    /// </summary>
+    public string guestUserName = "guest";
 
     public string UserToken { get; set; }
     public float SessionTime { get; set; }
@@ -87,36 +92,50 @@ public class WebCom : MonoBehaviour
 
     public void PostOrder(List<CollectedItem> items)
     {
-        var message = new OrderMessage()
+        if (userName != guestUserName)
         {
-            token = UserToken,
-            sessionId = sessionId,
-            timeStamp = Time.time,
-            items = items.ToArray(),
-        };
+            var message = new OrderMessage()
+            {
+                token = UserToken,
+                sessionId = sessionId,
+                timeStamp = Time.time,
+                items = items.ToArray(),
+            };
 
-        messageQueue.Add(new MessageInfo() { message = message, route = "post-order", timeStamp = messageAckId });
-        messageAckId++;
-        Debug.Log("order added to message queue, " + messageQueue.Count + " items in queue");
+            messageQueue.Add(new MessageInfo() { message = message, route = "post-order", ackId = messageAckId });
+            messageAckId++;
+            Debug.Log("order added to message queue, " + messageQueue.Count + " items in queue.");
+        }
+        else
+        {
+            Debug.Log("user is guest ignoring message.");
+        }
     }
 
     public void Login(string userName, string password, MessageCallback callback)
     {
-        messageQueue.Add(new MessageInfo()
+        if (userName != guestUserName)
         {
-            message = new LoginMessage()
+            messageQueue.Add(new MessageInfo()
             {
-                password = password,
-                user = userName
-            },
-            route = "login",
-            timeStamp = messageAckId,
-            callback = callback
-        });
+                message = new LoginMessage()
+                {
+                    password = password,
+                    user = userName
+                },
+                route = "login",
+                ackId = messageAckId,
+                callback = callback
+            });
 
-        messageAckId++;
+            messageAckId++;
 
-        Debug.Log("login added to message queue, " + messageQueue.Count + " items in queue");
+            Debug.Log("login added to message queue, " + messageQueue.Count + " items in queue.");
+        }
+        else
+        {
+            Debug.Log("User is guest, ignoring message.");
+        }
     }
 
     private void FlushQueue(List<MessageInfo> queue)
@@ -127,7 +146,7 @@ public class WebCom : MonoBehaviour
             var messageInfo = queue[i];
             PostASync(url + "/" + messageInfo.route, 
                         JsonUtility.ToJson(messageInfo.message),
-                        messageInfo.timeStamp,
+                        messageInfo.ackId,
                         messageInfo.callback);
         }
     }
@@ -141,7 +160,7 @@ public class WebCom : MonoBehaviour
     {
         for (int i = 0; i < queue.Count; i++)
         {
-            if (timeStamp == queue[i].timeStamp)
+            if (timeStamp == queue[i].ackId)
             {
                 return i;
             }
@@ -150,9 +169,9 @@ public class WebCom : MonoBehaviour
         return -1;
     }
 
-    private IEnumerator PostRequest(string url, string json, int timeStamp, MessageCallback callback)
+    private IEnumerator PostRequest(string url, string json, int ackId, MessageCallback callback)
     {
-        Debug.Log("[" + timeStamp + "] sending " + json + " to " + url);
+        Debug.Log("[" + ackId + "] sending " + json + " to " + url);
 
         var uwr = new UnityWebRequest(url, "POST");
 
@@ -168,27 +187,23 @@ public class WebCom : MonoBehaviour
         {
             callback.Invoke("error", uwr.responseCode);
 
-            Debug.Log("Error While Sending: " + uwr.error);
+            Debug.Log("Error while sending message, error = " + uwr.error);
             callback(uwr.error, uwr.responseCode);
         }
         else
         {
-            if (callback != null)
-            {
-                callback(uwr.downloadHandler.text, uwr.responseCode);
-            }
+            callback?.Invoke(uwr.downloadHandler.text, uwr.responseCode);
 
-            var index = FindMessageIndex(timeStamp, sendQueue);
-
-            sendQueue.RemoveAt(index);
+            var index = FindMessageIndex(ackId, sendQueue);
 
             if (index == -1)
             {
-                Debug.LogError("Client error, cannot resolve message with index " + timeStamp);
+                Debug.LogError("Client error, cannot resolve message with ack-id " + ackId + ".");
             }
             else 
             {
-                Debug.Log("ack " + timeStamp + ", " + sendQueue.Count + " messages in send queue remaining");
+                sendQueue.RemoveAt(index);
+                Debug.Log("Server-Ack " + ackId + ", " + sendQueue.Count + " messages in send queue remaining.");
             }
         }
     }
