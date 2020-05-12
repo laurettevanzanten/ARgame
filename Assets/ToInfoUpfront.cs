@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ToSampleScene : MonoBehaviour
+public class ToInfoUpfront : MonoBehaviour
 {
     public void OnClick()
     {
-        SceneManager.LoadScene("TutorialScene");
+        Debug.Log("ToInfoUpfront");
+        SceneManager.LoadScene("SampleScene");
     }
 }

@@ -244,8 +244,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Thank you for taking the time to participate in my experiment!\n\nThis
     experiment exists of two parts and will take approximately 40 minutes\nPART I\nGame
-    \nQuestionnaire \n\nPART 2\nGame \nQuestionnaire \n\nNow please watch the instruction
-    video, afterwards click the button below to start the game \n\n"
+    \nQuestionnaire \n\nPART 2\nGame \nQuestionnaire \n\nNow you will play one short
+    practice round to get acquianted with the game controls, click the button below.\n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -314,10 +314,10 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 725440221}
-    characterCount: 291
+    characterCount: 307
     spriteCount: 0
-    spaceCount: 55
-    wordCount: 46
+    spaceCount: 58
+    wordCount: 50
     linkCount: 0
     lineCount: 14
     pageCount: 1
@@ -642,7 +642,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start the game
+  m_text: Go to the tutorial
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
@@ -711,10 +711,10 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 1704537449}
-    characterCount: 14
+    characterCount: 18
     spriteCount: 0
-    spaceCount: 2
-    wordCount: 3
+    spaceCount: 3
+    wordCount: 4
     linkCount: 0
     lineCount: 1
     pageCount: 1

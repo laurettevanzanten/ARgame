@@ -22,6 +22,8 @@ public class GameStateComponent : MonoBehaviour
     public Vector3 rackSpacing = Vector3.right* 5;
     public char rackLabelPrefix = 'A';
 
+    public string nextSceneName;
+
     public SoundList soundList;
 
     public float TimeRemaining =>
@@ -88,7 +90,7 @@ public class GameStateComponent : MonoBehaviour
     {
         if (TimeRemaining <= 0)
         {
-            SceneManager.LoadScene("MiddlePage");
+            SceneManager.LoadScene(nextSceneName);
         }
 
     }
