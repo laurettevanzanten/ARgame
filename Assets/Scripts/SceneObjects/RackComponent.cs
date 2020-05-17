@@ -38,7 +38,7 @@ public class RackComponent : MonoBehaviour
         {
             BoxObjects[boxXIndex] = new GameObject[rackHeight];
 
-            var labelParameter2 = 1;
+            var labelParameter2 = rackHeight;
             var boxYIndex = 0;
 
             for (int y = 0; y < rackHeight; y++)
@@ -52,12 +52,12 @@ public class RackComponent : MonoBehaviour
                 boxObject.transform.parent = transform;
                 boxSprite.transform.localScale = spriteMinScale + (spriteMaxScale - spriteMinScale) * Random.value;
 
-                boxObject.name = string.Format(labelFormat, labelParameter1, labelParameter2);
+                boxObject.name = string.Format(labelFormat, labelParameter2, labelParameter1);
                 labelTextMesh.text = boxObject.name;
 
                 BoxObjects[boxXIndex][boxYIndex] = boxObject;
 
-                labelParameter2++;
+                labelParameter2--;
                 boxYIndex++;
             }
 
