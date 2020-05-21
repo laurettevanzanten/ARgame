@@ -1490,7 +1490,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1144039755
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1901,7 +1901,7 @@ MonoBehaviour:
   headerFontSize: 25
   itemFontSize: 20
   headerColor: '#000000'
-  selectedItemOrderColor: '#42EDFF'
+  selectedItemOrderColor: '#A0A0A0'
   itemOrderColor: '#A0A0A0'
   showAllOrderLines: 1
   headerFormat: Picklist
@@ -2333,7 +2333,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1946151791
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2653,7 +2653,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2126154154
 RectTransform:
   m_ObjectHideFlags: 0
