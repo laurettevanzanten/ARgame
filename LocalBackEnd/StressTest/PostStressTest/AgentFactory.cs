@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -13,6 +14,7 @@ namespace PostStressTest
         public const string UserNameId = "user-name";
         public const string MessageCountId = "message-count";
         public const string AckCountId = "ack-count";
+        public const string ErrorId = "errors";
 
         /// <summary>
         /// Creates an agent with a simple statemachine to login in (and retry if it fails), and send
@@ -39,7 +41,7 @@ namespace PostStressTest
 
             var logout = messageAgent.AddState<HttpMessageState>((s) => ConfigureLogoutState(s, log, endPoint, user));
 
-            var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 2000, 4000));
+            var loggedOutState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
             var loggedInState = messageAgent.AddState<RandomDelayState>((s) => ConfigureRandomDelayState(s, 10, 3000));
             
             messageAgent.CurrentState = loggedOutState;
@@ -152,15 +154,21 @@ namespace PostStressTest
                 }
                 return loggedOutState;
             });
-
             
             messageAgent.Initialize(ioc);
 
             messageAgent.AgentContext.Register(UserNameId, user);
             messageAgent.AgentContext.Register(MessageCountId, 0);
             messageAgent.AgentContext.Register(AckCountId, 0);
+            messageAgent.AgentContext.Register(ErrorId, new List<string>());
 
             return messageAgent;
+        }
+        
+        private static void LogError(Log log, IoC context, string err)
+        {
+            log?.Put(OutputLevel.Error, err);
+            context.Resolve<List<string>>(ErrorId).Add(err);
         }
 
         private static HttpMessageState ConfigureLoginState(HttpMessageState s, Log log, string endPoint, string user, string password)
@@ -187,6 +195,14 @@ namespace PostStressTest
 
                         s.Context.Register(UserTokenId, loginResponse.token);
                     }
+                    else
+                    {
+                        LogError(log, s.Context, s.Name + " response missed token.");
+                    }
+                }
+                else
+                {
+                    LogError(log, s.Context, s.Name + " failed login " + response.ReasonPhrase);
                 }
             };
             s.SendMethod = RestMethod.POST;
@@ -195,7 +211,7 @@ namespace PostStressTest
 
         private static HttpMessageState ConfigurewrongLoginState(HttpMessageState s, Log log, string endPoint, string user, string password)
         {
-            s.Name = user + ", HttpMessageState::login";
+            s.Name = user + ", HttpMessageState::wrongLogin";
             s.Uri = endPoint + "/login";
             s.Message = new LoginMessage()
             {
@@ -207,10 +223,11 @@ namespace PostStressTest
             {
                 if (response.IsSuccessStatusCode)
                 {
-                    log?.Put(OutputLevel.Error, s.Name, " somehow the login was correct using " + user + "/" + password);
+                    LogError(log, s.Context, s.Name + " somehow the login was correct using " + user + "/" + password);
                 }
                 else
                 {
+
                     log?.Put(OutputLevel.Info, s.Name, " got expected response (ie password does not exist) :) ");
                 }
             };
@@ -252,12 +269,17 @@ namespace PostStressTest
                     {
                         var serverResponse = JsonSerializer.Deserialize<OrderMessageResponse[]>(message);
 
-                        log?.Put(OutputLevel.Info, "For userId " +  getOrdersMessage.userId + " received orders " + message );
+                        log?.Put(OutputLevel.Info, "For userId " + getOrdersMessage.userId + " received orders " + message);
+                    }
+                    else
+                    {
+                        LogError(log, s.Context, s.Name + " no orders received for user " + getOrdersMessage.userId
+                           + " - " + response.ReasonPhrase);
                     }
                 }
                 else
                 {
-                    log?.Put(OutputLevel.Error, s.Name, "Error requesting user orders for user " + getOrdersMessage.userId 
+                    LogError(log, s.Context, s.Name + " error requesting user orders for user " + getOrdersMessage.userId
                                 + " - " + response.ReasonPhrase);
                 }
             };
@@ -298,10 +320,16 @@ namespace PostStressTest
                             s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
                         }*/
                     }
+                    else
+                    {
+                        LogError(log, s.Context, s.Name + " send order received no ack");
+                    }
+
                 }
                 else
                 {
-                    log?.Put(OutputLevel.Error, s.Name, "send order with " + orderMessage.items.Length + " items, received error code.");
+                    LogError(log, s.Context, s.Name + " send order with " + orderMessage.items.Length + " items, received error code."
+                           + " - " + response.ReasonPhrase);
                 }
             };
             s.SendMethod = RestMethod.POST;
@@ -341,10 +369,14 @@ namespace PostStressTest
                             s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
                         }*/
                     }
+                    else
+                    {
+                        LogError(log, s.Context, s.Name + " send heartbeat, received no ack");
+                    }
                 }
                 else
                 {
-                    log?.Put(OutputLevel.Error, s.Name, "send heartbeat received error code.");
+                    LogError(log, s.Context, s.Name + " send heartbeat, received error code." + " - " + response.ReasonPhrase);
                 }
             };
             s.SendMethod = RestMethod.POST;
@@ -369,7 +401,7 @@ namespace PostStressTest
             {
                 if (response.IsSuccessStatusCode)
                 {
-                    log?.Put(OutputLevel.Error, s.Name, "received success code but expected error.");
+                    LogError(log, s.Context, s.Name + " send wrong ok which somehow was a success");
                 }
                 else
                 {
@@ -380,8 +412,6 @@ namespace PostStressTest
             s.SendMethod = RestMethod.POST;
             return s;
         }
-
-
 
         private static HttpMessageState ConfigureLogoutState(HttpMessageState s, Log log, string endPoint, string user)
         {
@@ -400,6 +430,11 @@ namespace PostStressTest
                 if (response.IsSuccessStatusCode)
                 {
                     s.Context.Remove(UserTokenId);
+                }
+                else
+                {
+                    LogError(log, s.Context, s.Name + " tried to log out, received error code." + " - " + response.ReasonPhrase);
+
                 }
             };
             s.SendMethod = RestMethod.POST;

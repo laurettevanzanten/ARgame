@@ -46,6 +46,7 @@ namespace PostStressTest
 
             var messageCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.MessageCountId));
             var ackCount = agentTaskList.Sum(tuple => tuple.agent.AgentContext.Resolve<int>(AgentFactory.AckCountId));
+            var errors = agentTaskList.Select(tuple => tuple.agent.AgentContext.Resolve<List<string>>(AgentFactory.ErrorId));
 
             log.FlushCSV("stress-test.csv");
         }
