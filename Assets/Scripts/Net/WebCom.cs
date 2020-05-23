@@ -20,10 +20,12 @@ public class WebCom : MonoBehaviour
     public string url = "http://localhost:3000/";
     public string userName = "admin";
     public string password = "foo";
-    public int    sessionId = 0;
+    public int    scene = 0;
 
     public float timeout = 30.0f;
     public float sendInterval = 1.0f;
+
+    public bool loginOnStart = false;
 
     /// <summary>
     /// No messages will be send to the back-end when the user name equals
@@ -61,14 +63,39 @@ public class WebCom : MonoBehaviour
             }
         }
 
+        if (others == null || others.Length <= 1)
+        {
+            if (loginOnStart)
+            {
+                Debug.Log("logging in using component credentials");
+                Login(this.userName, this.password, (serverReplyText, responseCode) => 
+                {
+                    if (responseCode == 200)
+                    {
+                        Debug.Log( "(auto) Log in ok...");
+                        var response = JsonUtility.FromJson<LoginResponse>(serverReplyText);
+                        UserToken = response.token;
+                    }
+                    else
+                    {
+                        Debug.LogError("Login failed: " + responseCode);
+                    }
+                });
+                lastSendTime = Time.time;
+                FlushQueue(sendQueue);
+            }
+        }
+
         DontDestroyOnLoad(gameObject);
+
+        
     }
 
     public void Update()
     {
-        if (sendQueue.Count > 0)
+        if (sendQueue.Count > 0 && !string.IsNullOrEmpty(UserToken))
         {
-            if (Time.time - lastSendTime > timeout)
+            if (Time.time - lastSendTime > timeout) 
             {
                 Debug.Log("timeout, trying again");
                 lastSendTime = Time.time;
@@ -97,7 +124,7 @@ public class WebCom : MonoBehaviour
             var message = new OrderMessage()
             {
                 token = UserToken,
-                sessionId = sessionId,
+                scene = scene,
                 timeStamp = Time.time,
                 items = items.ToArray(),
             };
@@ -105,6 +132,35 @@ public class WebCom : MonoBehaviour
             messageQueue.Add(new MessageInfo() { message = message, route = "post-order", ackId = messageAckId });
             messageAckId++;
             Debug.Log("order added to message queue, " + messageQueue.Count + " items in queue.");
+        }
+        else
+        {
+            Debug.Log("user is guest ignoring message.");
+        }
+    }
+
+    public void SaveProgress(int nextScene, MessageCallback callback)
+    {
+        if (userName != guestUserName)
+        {
+            var message = new OrderMessage()
+            {
+                token = UserToken,
+                scene = nextScene,
+                timeStamp = 0,
+                items = new CollectedItem[0],                
+            };
+
+            messageQueue.Add(new MessageInfo()
+            {
+                message = message,
+                route = "post-order",
+                ackId = messageAckId,
+                callback = callback
+            });
+
+            messageAckId++;
+            Debug.Log("save progress to message queue, " + messageQueue.Count + " items in queue.");
         }
         else
         {

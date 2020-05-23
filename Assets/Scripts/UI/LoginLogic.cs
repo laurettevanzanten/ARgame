@@ -96,12 +96,21 @@ public class LoginLogic : MonoBehaviour
             messageText.text = "Log in ok...";
             var response = JsonUtility.FromJson<LoginResponse>(text);
             webCom.UserToken = response.token;
-            webCom.sessionId = response.session;
+            webCom.scene = response.scene == -1 ? 1 : response.scene;
             webCom.userName = nameField.text;
             webCom.password = passwordField.text;
             webCom.SessionTime = response.timeStamp;
-            Debug.Log("Loading scene " + nextScene);
-            SceneManager.LoadScene(nextScene);
+
+            if (webCom.scene <= -1)
+            {
+                Debug.Log("Loading scene " + nextScene);
+                SceneManager.LoadScene(nextScene);
+            }
+            else
+            {
+                Debug.Log("Loading scene " + webCom.scene);
+                SceneManager.LoadScene(webCom.scene);
+            }
         }
         else if (responseCode >= 400 && responseCode < 500)
         {
@@ -110,7 +119,7 @@ public class LoginLogic : MonoBehaviour
         }
         else if (responseCode >= 500 && responseCode < 600)
         {
-            messageText.text = "Hmm ... something is wrong, the server reported an error.";
+            messageText.text = "The server reported an error.";
             StopLoggingIn();
         }
         else

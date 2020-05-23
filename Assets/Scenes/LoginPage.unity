@@ -5059,12 +5059,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b77cb00314b245d40adfa637f7f5ebcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  url: https://rocky-basin-09452.herokuapp.com
+  url: http://localhost:3000
   userName: admin
   password: foo
-  sessionId: 0
+  scene: 0
   timeout: 30
   sendInterval: 1
+  loginOnStart: 0
   guestUserName: guest
 --- !u!4 &263827189
 Transform:

@@ -90,11 +90,19 @@ public class GameStateComponent : MonoBehaviour
     {
         if (TimeRemaining <= 0)
         {
-            SceneManager.LoadScene(nextSceneName);
+            if (webComponent != null)
+            {
+                webComponent.SaveProgress(webComponent.scene + 1, (replyText, code) =>
+                {
+                    SceneManager.LoadScene(webComponent.scene + 1);
+                });
+            }
+            else
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+            }
         }
-
     }
-
 
     public void StartClock()
     {

@@ -24,8 +24,8 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
-            //const string endPoint = "http://localhost:3000";
+            //const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
+            const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
             const int maxTimeSeconds = 30;
 

@@ -5,7 +5,7 @@ public class LoginResponse
 {
     public string token;
 
-    public int session;
+    public int scene;
 
     public float timeStamp;
 }
