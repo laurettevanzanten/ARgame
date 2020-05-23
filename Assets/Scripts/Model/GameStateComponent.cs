@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Assets.Scripts.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameStateComponent : MonoBehaviour
 {
@@ -20,9 +22,14 @@ public class GameStateComponent : MonoBehaviour
     public Vector3 rackSpacing = Vector3.right* 5;
     public char rackLabelPrefix = 'A';
 
+    public string nextSceneName;
+
     public SoundList soundList;
 
-    public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - (Time.time - startTime));
+    public float TimeRemaining =>
+            webComponent == null
+                ? Mathf.Max(0, maxTimeSeconds - (Time.time - startTime))
+                : Mathf.Max(0, maxTimeSeconds - ((Time.time - startTime) + webComponent.SessionTime));
 
     public int CompletedOrders => CollectedItems.Count -1;
     public GameObject[] RackObjects { get; private set; }
@@ -43,7 +50,6 @@ public class GameStateComponent : MonoBehaviour
     {
         Instance = this;
         
-
         Orders = CSVParser.ParseGrid(orders, (value, x, y) => new OrderProperties(value));
 
         if (rackSetup == null)
@@ -57,21 +63,51 @@ public class GameStateComponent : MonoBehaviour
 
         CollectedItems.Add(new List<CollectedItem>());
 
-        webComponent = GetComponent<WebCom>();
+        var webComObject = GameObject.FindGameObjectWithTag(Tags.WebComTag);
 
-        if (webComponent == null)
+        if (webComObject != null)
         {
-            Debug.LogWarning("Cannot resolve webComponent");
+            webComponent = webComObject.GetComponent<WebCom>();
+
+            if (webComponent == null)
+            {
+                Debug.LogWarning("Cannot resolve WebCom component");
+            }
+            else
+            {
+                Debug.Log("Webcom found using user token " + webComponent.UserToken);
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Cannot resolve WebCom object");
         }
 
         audioSource = GetComponent<AudioSource>();
-
     }
+
+    public void Update()
+    {
+        if (TimeRemaining <= 0)
+        {
+            if (webComponent != null)
+            {
+                webComponent.SaveProgress(webComponent.scene + 1, (replyText, code) =>
+                {
+                    SceneManager.LoadScene(webComponent.scene + 1);
+                });
+            }
+            else
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+            }
+        }
+    }
+
     public void StartClock()
     {
         startTime = Time.time;
     }
-
 
 
     public GameObject ResolveBoxObject(OrderProperties properties)

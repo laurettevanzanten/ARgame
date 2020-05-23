@@ -24,10 +24,10 @@ namespace PostStressTest
     {
         static void Main(string[] args)
         {
-            const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
-            //const string endPoint = "http://localhost:3000";
+            //const string endPoint =  "https://rocky-basin-09452.herokuapp.com";
+            const string endPoint = "http://localhost:3000";
             const int maxUsers = 50;
-            const int maxTimeSeconds = 90;
+            const int maxTimeSeconds = 30;
 
             var log = new Log()
             {
@@ -36,7 +36,8 @@ namespace PostStressTest
 
             var ioc = new IoC()
                         .Register<Random>()
-                        .Register<Log>(log);
+                        .Register<Log>(log)
+                        .Register(UserList.UserListIoCID, UserList.Credentials);
 
             var agentTaskList = CreateTaskList(ioc, maxUsers, endPoint);
 
@@ -53,15 +54,14 @@ namespace PostStressTest
         private static AgentTaskList CreateTaskList(IoC ioc, int agentCount, string endPoint, int taskIntervalMS = 10)
         {
             var agentTaskList = new AgentTaskList();
+            var userlist = ioc.Resolve<(string user, string password)[]>(UserList.UserListIoCID);
 
             // create tasks for each user
             for (int i = 0; i < agentCount; i++)
             {
                 var cancelSource = new CancellationTokenSource();
                 var token = cancelSource.Token;
-                var userName = "user" + (i + 1);
-                var password = "pwd" + (i + 1);
-                var agent = AgentFactory.CreateHttpMessageAgent(ioc, endPoint, agentCount, userName, password);
+                var agent = AgentFactory.CreateHttpMessageAgent(ioc, endPoint, agentCount, userlist[i].user, userlist[i].password);
 
                 agentTaskList.Add((
                     agent,

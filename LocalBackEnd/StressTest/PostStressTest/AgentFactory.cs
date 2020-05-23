@@ -313,10 +313,12 @@ namespace PostStressTest
                     {
                         var serverResponse = JsonSerializer.Deserialize<ServerResponse>(message);
 
-                        if (serverResponse.timeStamp == orderMessage.timeStamp)
+                        s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
+
+                        /*if (serverResponse.timeStamp == orderMessage.timeStamp)
                         {
                             s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
-                        }
+                        }*/
                     }
                     else
                     {
@@ -344,7 +346,7 @@ namespace PostStressTest
             s.SetupMessage = (msg) =>
             {
                 heartbeatMessage.token = s.Context.Resolve<string>(UserTokenId);
-                heartbeatMessage.timeStamp = heartbeatMessage.timeStamp + 1;
+                heartbeatMessage.timeStamp += 1;
 
                 s.Context.Register(MessageCountId, s.Context.Resolve<int>(MessageCountId) + 1);
 
@@ -360,10 +362,12 @@ namespace PostStressTest
                     {
                         var serverResponse = JsonSerializer.Deserialize<ServerResponse>(message);
 
-                        if (serverResponse.timeStamp == heartbeatMessage.timeStamp)
+                        s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
+
+                        /*if (serverResponse.timeStamp == heartbeatMessage.timeStamp)
                         {
                             s.Context.Register(AckCountId, s.Context.Resolve<int>(AckCountId) + 1);
-                        }
+                        }*/
                     }
                     else
                     {

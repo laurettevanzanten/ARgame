@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ToInstructionPage : MonoBehaviour
+public class ToGradualScene : MonoBehaviour
 {
-    public void OnClick ()
+   public void OnClick()
     {
-        SceneManager.LoadScene("InstructionPage");
+        SceneManager.LoadScene("GradualScene");
     }
 }
