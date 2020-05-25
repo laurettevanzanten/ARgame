@@ -88,7 +88,7 @@ public class GameStateComponent : MonoBehaviour
 
     public void Update()
     {
-        if (TimeRemaining <= 0)
+        if (TimeRemaining <= 0 || Input.GetKeyUp(KeyCode.Slash))
         {
             if (webComponent != null)
             {
