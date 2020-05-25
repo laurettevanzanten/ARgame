@@ -170,8 +170,9 @@ public class GameStateComponent : MonoBehaviour
             {
                 foreach (var collectedItem in _pickedupItems.Values)
                 {
-                    // missed items have a negative position
-                    collectedItem.pos = -collectedItem.pos;
+                    // missed items have a negative position + (-1,-1) 
+                    // this way we can still figure out where the item comes from 
+                    collectedItem.pos = -(collectedItem.pos)  + Vector2Int.one * -1;
                     CollectedItems[CurrentOrderListIndex].Add(collectedItem);
                 }
 

@@ -59,6 +59,8 @@ public class ItemProvider : MonoBehaviour
 
                     spawnedItem.transform.position = worldPosition;
                     itemProperties.OriginCoordinate = OriginCoordinate;
+
+                    GameStateComponent.Instance.OnItemTakenFromBox(itemProperties);
                 }
 
                 isMouseDown = false;
