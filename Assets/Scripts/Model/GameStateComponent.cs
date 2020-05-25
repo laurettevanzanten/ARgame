@@ -46,6 +46,8 @@ public class GameStateComponent : MonoBehaviour
     private WebCom webComponent;
     private AudioSource audioSource;
 
+    private Dictionary<GameObject, CollectedItem> _pickedupItems = new Dictionary<GameObject, CollectedItem>();
+
     public void Start()
     {
         Instance = this;
@@ -135,15 +137,22 @@ public class GameStateComponent : MonoBehaviour
         return ResolveItemName(properties.rackLetter - rackLabelPrefix, properties.x, properties.y);
     }
 
+    public void OnItemTakenFromBox(ItemBehaviour itemLabel)
+    {
+        _pickedupItems[itemLabel.gameObject] = new CollectedItem()
+        {
+            pos = itemLabel.OriginCoordinate,
+            ts = (int)Time.time
+        };
+    }
+
     public void OnItemCollected(ItemBehaviour itemLabel)
     {
         if (CurrentOrderListIndex < CollectedItems.Count)
         {
-            CollectedItems[CurrentOrderListIndex].Add(new CollectedItem()
-            {
-                pos = itemLabel.OriginCoordinate,
-                ts = (int) Time.time
-            });
+            CollectedItems[CurrentOrderListIndex].Add(_pickedupItems[itemLabel.gameObject]);
+
+            _pickedupItems.Remove(itemLabel.gameObject);
 
             TryToPlaySound(soundList.itemCollected);
         }
@@ -159,12 +168,26 @@ public class GameStateComponent : MonoBehaviour
         {
             if (webComponent != null)
             {
+                foreach (var collectedItem in _pickedupItems.Values)
+                {
+                    // missed items have a negative position
+                    collectedItem.pos = -collectedItem.pos;
+                    CollectedItems[CurrentOrderListIndex].Add(collectedItem);
+                }
+
                 webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1]);
             }
             else
             {
                 Debug.LogWarning("no webcomponent defined, cannot send messages to server.");
             }
+
+            foreach ( var pickedUpItem in _pickedupItems.Keys)
+            {
+                GameObject.Destroy(pickedUpItem);
+            }
+
+            _pickedupItems.Clear();
 
             TryToPlaySound(soundList.nextOrder);
             CollectedItems.Add(new List<CollectedItem>());
