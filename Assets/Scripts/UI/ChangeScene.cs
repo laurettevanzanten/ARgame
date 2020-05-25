@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class ToSampleScene : MonoBehaviour
+public class ChangeScene : MonoBehaviour
 {
+    public string nextScene;
     private WebCom webCom;
 
     public void Awake()
@@ -22,18 +23,18 @@ public class ToSampleScene : MonoBehaviour
             {
                 if (response == 200)
                 {
-                    SceneManager.LoadScene("TutorialScene");
+                    SceneManager.LoadScene(nextScene);
                     webCom.scene = nextScene;
                 }
                 else
                 {
-                    Debug.Log("Problem reaching the server " + response); 
+                    Debug.Log("Problem reaching the server " + response);
                 }
             });
         }
         else
         {
-            SceneManager.LoadScene("TutorialScene");
+            SceneManager.LoadScene(nextScene);
         }
     }
 }

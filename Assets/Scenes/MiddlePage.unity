@@ -400,9 +400,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 999648389}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0d188a69ab64534d87166ffc58cd695, type: 3}
+  m_Script: {fileID: 11500000, guid: 60b28613df2342249a3446a887bdd30f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  nextScene: GradualScene
 --- !u!114 &999648392
 MonoBehaviour:
   m_ObjectHideFlags: 0
