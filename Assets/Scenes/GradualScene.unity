@@ -275,7 +275,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxTimeSeconds: 900
-  orders: {fileID: 4900000, guid: f82af5653a915b64a983a213856a7795, type: 3}
+  orders: {fileID: 4900000, guid: ba821cba5e7f9c348b9444bf6fac81d4, type: 3}
   rackSetup: {fileID: 4900000, guid: 14a51ace8ff3e0643b83e2ea01c464b9, type: 3}
   itemVariations:
   - color: {r: 0, g: 0.70077515, b: 1, a: 1}
