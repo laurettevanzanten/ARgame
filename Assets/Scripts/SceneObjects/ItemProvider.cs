@@ -25,13 +25,24 @@ public class ItemProvider : MonoBehaviour
 
     public Vector2Int OriginCoordinate { get; set; }
 
+    private GameStateComponent gameState;
+
     void Start()
     {
+        gameState = GameStateComponent.Instance;
         isMouseDown = false;
     }
 
     void Update()
     {
+        if (gameState == null || gameState.IsGameActive)
+        {
+            UpdateGameState();
+        }
+    }
+
+    private void UpdateGameState()
+    { 
         if (Input.GetMouseButtonDown(0) && !isMouseDown && isMouseOnProvider)
         {
             isMouseDown = true;
@@ -60,7 +71,7 @@ public class ItemProvider : MonoBehaviour
                     spawnedItem.transform.position = worldPosition;
                     itemProperties.OriginCoordinate = OriginCoordinate;
 
-                    GameStateComponent.Instance.OnItemTakenFromBox(itemProperties);
+                    gameState?.OnItemTakenFromBox(itemProperties);
                 }
 
                 isMouseDown = false;
