@@ -242,16 +242,14 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'That was part 1!
-
-    You may now fill in the questionnaire (use your
-    userID)
-
-    After completing the first part of the questionnaire, you can return
-    to this screen
-
-
-    Click the button below to go to the second part of the experiment'
+  m_text: "That was part 1!\nYou may now fill in the questionnaire (use your userID)\nAfter
+    completing the first part of the questionnaire, you can return to this screen\n\n----\nThank
+    you for completing the first part of the questionnaire. \nYou will again play
+    a small tutorial to get acquainted with the settings, you will pick 2 orders.\nAfter
+    finishing the 2 orders in the tutorial, click the blue button \"Go to real game\"\nYou
+    will immediately be directed to the real game. Don't worry, after completing
+    the section game, instructions will guide you further in the process. \n\nClick
+    the button below to go to the second part of the experiment"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -296,7 +294,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: -1
+  m_firstOverflowCharacterIndex: 163
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -320,12 +318,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 725440221}
-    characterCount: 223
+    characterCount: 628
     spriteCount: 0
-    spaceCount: 41
-    wordCount: 41
+    spaceCount: 113
+    wordCount: 110
     linkCount: 0
-    lineCount: 6
+    lineCount: 16
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -403,7 +401,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60b28613df2342249a3446a887bdd30f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nextScene: GradualScene
+  nextScene: TutorialSceneGradual
 --- !u!114 &999648392
 MonoBehaviour:
   m_ObjectHideFlags: 0
