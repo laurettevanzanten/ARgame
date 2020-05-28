@@ -27,14 +27,14 @@ public class ItemConsumer : MonoBehaviour
 
     private void TryToConsume(GameObject colliderObject)
     {
-        if (colliderObject.tag == targetTag)
+        if ((gameState == null || gameState.IsGameActive) && colliderObject.tag == targetTag)
         {
             var jointControl = colliderObject.GetComponent<TargetJointControl>();
             var itemBehaviour = colliderObject.GetComponent<ItemBehaviour>();
 
             if (itemBehaviour != null && jointControl != null && !jointControl.IsTrackingMouse)
             {
-                gameState.OnItemCollected(itemBehaviour);
+                gameState?.OnItemCollected(itemBehaviour);
             }
 
             if (jointControl != null && !jointControl.IsTrackingMouse)
