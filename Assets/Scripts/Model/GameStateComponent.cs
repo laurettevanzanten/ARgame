@@ -26,11 +26,8 @@ public class GameStateComponent : MonoBehaviour
 
     public SoundList soundList;
 
-    public float TimeRemaining =>
-            webComponent == null
-                ? Mathf.Max(0, maxTimeSeconds - (Time.time - startTime))
-                : Mathf.Max(0, maxTimeSeconds - ((Time.time - startTime) + webComponent.SessionTime));
-
+    public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - (Time.timeSinceLevelLoad - startTime));
+            
     public int CompletedOrders => CollectedItems.Count -1;
     public GameObject[] RackObjects { get; private set; }
     public List<List<CollectedItem>> CollectedItems { get; private set; } = new List<List<CollectedItem>>();
@@ -47,6 +44,8 @@ public class GameStateComponent : MonoBehaviour
     private AudioSource audioSource;
 
     private Dictionary<GameObject, CollectedItem> _pickedupItems = new Dictionary<GameObject, CollectedItem>();
+
+    public bool IsGameActive { get; private set; } = true;
 
     public void Start()
     {
@@ -94,6 +93,9 @@ public class GameStateComponent : MonoBehaviour
         {
             if (webComponent != null)
             {
+                // stop the user from doing things
+                IsGameActive = false;
+
                 webComponent.SaveProgress(webComponent.scene + 1, (replyText, code) =>
                 {
                     SceneManager.LoadScene(webComponent.scene + 1);
@@ -109,6 +111,12 @@ public class GameStateComponent : MonoBehaviour
     public void StartClock()
     {
         startTime = Time.time;
+
+        if (webComponent != null)
+        {
+            startTime -= webComponent.SessionTime;
+            webComponent.SessionTime = 0;
+        }
     }
 
 
