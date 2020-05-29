@@ -34,7 +34,11 @@ public class WebCom : MonoBehaviour
     public string guestUserName = "guest";
 
     public string UserToken { get; set; }
-    public float SessionTime { get; set; }
+
+    /// <summary>
+    /// Time the last known session stopped. Used when restoring previous sessions.
+    /// </summary>
+    public float SessionTime { get; private set; } = 0;
 
     private List<MessageInfo> messageQueue = new List<MessageInfo>();
     private List<MessageInfo> sendQueue  = new List<MessageInfo>();
@@ -87,8 +91,6 @@ public class WebCom : MonoBehaviour
         }
 
         DontDestroyOnLoad(gameObject);
-
-        
     }
 
     public void Update()
@@ -117,7 +119,28 @@ public class WebCom : MonoBehaviour
         }
     }
 
-    public void PostOrder(List<CollectedItem> items)
+    public void InitializeFromSavedSettings(LoginResponse response, string name, string pwd)
+    {
+        UserToken = response.token;
+        scene = response.scene == -1 ? 1 : response.scene;
+        userName = name;
+        password = pwd;
+        SessionTime = response.timeStamp;
+
+    }
+
+    /// <summary>
+    /// Returns the session time and sets it to 0. The session time should only be used once.
+    /// </summary>
+    /// <returns></returns>
+    public float ConsumeSessionTime()
+    {
+        var result = SessionTime;
+        SessionTime = 0;
+        return result;
+    }
+
+    public void PostOrder(List<CollectedItem> items, float gameTime)
     {
         if (userName != guestUserName)
         {
@@ -125,7 +148,7 @@ public class WebCom : MonoBehaviour
             {
                 token = UserToken,
                 scene = scene,
-                timeStamp = Time.time,
+                timeStamp = gameTime,
                 items = items.ToArray(),
             };
 

@@ -26,10 +26,9 @@ public class GameStateComponent : MonoBehaviour
 
     public SoundList soundList;
 
-    public float TimeRemaining =>
-            webComponent == null
-                ? Mathf.Max(0, maxTimeSeconds - (Time.time - startTime))
-                : Mathf.Max(0, maxTimeSeconds - ((Time.time - startTime) + webComponent.SessionTime));
+    private float timeRemainingFromPreviousSession = 0;
+    public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - ((Time.timeSinceLevelLoad - clockStartTime) + timeRemainingFromPreviousSession));
+    public float GameTime => (float)Math.Round(maxTimeSeconds - TimeRemaining, 2);
 
     public int CompletedOrders => CollectedItems.Count -1;
     public GameObject[] RackObjects { get; private set; }
@@ -41,12 +40,14 @@ public class GameStateComponent : MonoBehaviour
 
     public int CurrentOrderLine { get; private set; } = 0;
 
-    private float startTime;
+    private float clockStartTime;
 
     private WebCom webComponent;
     private AudioSource audioSource;
 
     private Dictionary<GameObject, CollectedItem> _pickedupItems = new Dictionary<GameObject, CollectedItem>();
+
+    public bool IsGameActive { get; private set; } = true;
 
     public void Start()
     {
@@ -94,6 +95,9 @@ public class GameStateComponent : MonoBehaviour
         {
             if (webComponent != null)
             {
+                // stop the user from doing things
+                IsGameActive = false;
+
                 webComponent.SaveProgress(webComponent.scene + 1, (replyText, code) =>
                 {
                     SceneManager.LoadScene(webComponent.scene + 1);
@@ -106,9 +110,21 @@ public class GameStateComponent : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Start the game clock, will happen after for instance the countdown completes
+    /// </summary>
     public void StartClock()
     {
-        startTime = Time.time;
+        clockStartTime = Time.timeSinceLevelLoad;
+
+        if (webComponent != null)
+        {
+            // consume any time remaining from the last time a session was run
+            // ie if the user aborts the game, we keep use of the last order sent to estimate
+            // when the game should start. This time is kept in the web component and consumed 
+            // one time by the game state. 
+            timeRemainingFromPreviousSession = webComponent.ConsumeSessionTime();
+        }
     }
 
 
@@ -139,10 +155,12 @@ public class GameStateComponent : MonoBehaviour
 
     public void OnItemTakenFromBox(ItemBehaviour itemLabel)
     {
+        Debug.Log("Item taken at " + GameTime);
+
         _pickedupItems[itemLabel.gameObject] = new CollectedItem()
         {
             pos = itemLabel.OriginCoordinate,
-            ts = (int)Time.time
+            ts = GameTime
         };
     }
 
@@ -176,7 +194,7 @@ public class GameStateComponent : MonoBehaviour
                     CollectedItems[CurrentOrderListIndex].Add(collectedItem);
                 }
 
-                webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1]);
+                webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1], GameTime);
             }
             else
             {

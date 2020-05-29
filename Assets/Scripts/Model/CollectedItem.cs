@@ -5,16 +5,16 @@ using UnityEngine;
 public class CollectedItem
 {
     public Vector2Int pos;
-    public int ts;
+    public float ts;
 
     public string ToJson()
     {
-        return "{ \"x\":" + pos.x + ", \"y\":" + pos.y + ", \"ts\": " + ((int)ts).ToString() + "}";
+        return "{ \"x\":" + pos.x + ", \"y\":" + pos.y + ", \"ts\": " + (ts).ToString() + "}";
     }
 
     public override string ToString()
     {
-        return "x:" + pos.x + ", y:" + pos.y + ", ts: " + ((int)ts).ToString();
+        return "x:" + pos.x + ", y:" + pos.y + ", ts: " + (ts).ToString();
     }
 }
 
