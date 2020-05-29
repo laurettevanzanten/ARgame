@@ -95,11 +95,8 @@ public class LoginLogic : MonoBehaviour
         {
             messageText.text = "Log in ok...";
             var response = JsonUtility.FromJson<LoginResponse>(text);
-            webCom.UserToken = response.token;
-            webCom.scene = response.scene == -1 ? 1 : response.scene;
-            webCom.userName = nameField.text;
-            webCom.password = passwordField.text;
-            webCom.SessionTime = response.timeStamp;
+
+            webCom.InitializeFromSavedSettings(response, nameField.text, passwordField.text);
 
             if (webCom.scene <= -1)
             {
