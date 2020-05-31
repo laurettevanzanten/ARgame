@@ -1,40 +1,30 @@
 ﻿using Assets.Scripts.Model;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class ChangeScene : MonoBehaviour
 {
-    public string nextScene;
-    private WebCom webCom;
+    public GameObject loadScreenSpinner;
+    
+    private WebCom _webCom;
 
-    public void Awake()
+    public void Start()
     {
-        webCom = GameObject.FindGameObjectWithTag(Tags.WebComTag)?.GetComponent<WebCom>();
+        loadScreenSpinner.SetActive(false);
+
+        var webComObject = GameObject.FindGameObjectWithTag(Tags.WebComTag);
+
+        _webCom = webComObject?.GetComponent<WebCom>();
+       
+        if (_webCom == null)
+        {
+            Debug.LogWarning("No webcom object resolved");
+        }
     }
 
     public void OnClick()
     {
-        if (webCom != null)
-        {
-            var nextScene = SceneManager.GetActiveScene().buildIndex + 1;
-            webCom.SaveProgress(nextScene, (message, response) =>
-            {
-                if (response == 200)
-                {
-                    SceneManager.LoadScene(nextScene);
-                    webCom.scene = nextScene;
-                }
-                else
-                {
-                    Debug.Log("Problem reaching the server " + response);
-                }
-            });
-        }
-        else
-        {
-            SceneManager.LoadScene(nextScene);
-        }
+        FadeUtility.FadeToNextScene(loadScreenSpinner, _webCom, () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1));
+
     }
 }
