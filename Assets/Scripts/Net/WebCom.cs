@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-
 public delegate void MessageCallback(string serverReplyText, long responseCode);
 
 public class MessageInfo
@@ -17,13 +16,20 @@ public class MessageInfo
 
 public class WebCom : MonoBehaviour
 {
+    const string NetworkErrorText = "network error";
+
     public string url = "http://localhost:3000/";
     public string userName = "admin";
     public string password = "foo";
     public int    scene = 0;
 
     public float timeout = 30.0f;
-    public float sendInterval = 1.0f;
+    public float sendInterval = 0.5f;
+
+    /// <summary>
+    /// How often should we send a heartbeat to the server
+    /// </summary>
+    public float heartbeatInterval = 5.0f;
 
     public bool loginOnStart = false;
 
@@ -33,6 +39,9 @@ public class WebCom : MonoBehaviour
     /// </summary>
     public string guestUserName = "guest";
 
+    /// <summary>
+    /// Token used to identify a logged in user on the server
+    /// </summary>
     public string UserToken { get; set; }
 
     /// <summary>
@@ -40,12 +49,29 @@ public class WebCom : MonoBehaviour
     /// </summary>
     public float SessionTime { get; private set; } = 0;
 
+    public string NetworkError { get; private set; } = null;
+
+    /// <summary>
+    /// Last received ping / heartbeat
+    /// </summary>
+    public float PingTime { get; set; } = -1;
+
     private List<MessageInfo> messageQueue = new List<MessageInfo>();
     private List<MessageInfo> sendQueue  = new List<MessageInfo>();
 
+    /// <summary>
+    /// Ids used to identify what message was acknowledged by the server
+    /// </summary>
     private int messageAckId = 0;
 
     private float lastSendTime = 0;
+
+    /// <summary>
+    /// Last time a heartbeat was sent
+    /// </summary>
+    private float lastHeartbeatTime = -1.0f;
+
+    private bool waitingToHeartbeat = false;
 
     void Awake()
     {
@@ -55,6 +81,8 @@ public class WebCom : MonoBehaviour
         {
             if (others[i] != gameObject)
             {
+                // if the other does not have a user token its redundant for the duration
+                // of this session
                 if (!string.IsNullOrEmpty(UserToken))
                 {
                     Destroy(others[i]);
@@ -93,22 +121,25 @@ public class WebCom : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+
     public void Update()
     {
+        UpdateHeartbeat();
+      
         if (sendQueue.Count > 0 && !string.IsNullOrEmpty(UserToken))
         {
-            if (Time.time - lastSendTime > timeout) 
+            if (Time.time - lastSendTime > timeout)
             {
                 Debug.Log("timeout, trying again");
                 lastSendTime = Time.time;
                 FlushQueue(sendQueue);
             }
         }
-        else if (Time.time - lastSendTime > sendInterval)
+        else if (Time.time - lastSendTime > sendInterval && sendQueue.Count == 0)
         {
             lastSendTime = Time.time;
 
-            if (messageQueue.Count > 0 )
+            if (messageQueue.Count > 0)
             {
                 var temp = sendQueue;
                 sendQueue = messageQueue;
@@ -217,6 +248,49 @@ public class WebCom : MonoBehaviour
         }
     }
 
+    private void UpdateHeartbeat()
+    {
+        if (lastHeartbeatTime < 0 || ((Time.time - lastHeartbeatTime) > heartbeatInterval && !waitingToHeartbeat))
+        {
+            lastHeartbeatTime = Time.time;
+            waitingToHeartbeat = true;
+
+            messageQueue.Add(new MessageInfo()
+            {
+                message = new HeartbeatMessage()
+                {
+                    // timestamp is unused at the time of writing
+                    timeStamp = 0,
+
+                    // token may or may not be defined
+                    token = UserToken
+                },
+                route = "heartbeat",
+                ackId = messageAckId,
+                callback = (serverReplyText, responseCode) =>
+                {
+                    if (serverReplyText != NetworkErrorText)
+                    {
+                        if (responseCode == 200)
+                        {
+                            PingTime = Time.time - lastHeartbeatTime;
+                        }
+                        else
+                        {
+                            PingTime = -responseCode;
+                        }
+                    }
+
+                    // update the time so we won't send heartbeats too quickly
+                    waitingToHeartbeat = false;
+                    lastHeartbeatTime = Time.time;
+                }
+            });
+
+            messageAckId++;
+        }
+    }
+
     private void FlushQueue(List<MessageInfo> queue)
     {
         Debug.Log("sending " + queue.Count + "items");
@@ -262,26 +336,33 @@ public class WebCom : MonoBehaviour
 
         yield return uwr.SendWebRequest();
 
+
         if (uwr.isNetworkError)
         {
-            callback.Invoke("error", uwr.responseCode);
+            callback.Invoke(NetworkErrorText, uwr.responseCode);
 
             Debug.Log("Error while sending message, error = " + uwr.error);
             callback(uwr.error, uwr.responseCode);
+
+            NetworkError = NetworkErrorText + (uwr.responseCode != 0 ? " " + uwr.responseCode : ""); 
         }
         else
         {
+            NetworkError = string.Empty;
+
             callback?.Invoke(uwr.downloadHandler.text, uwr.responseCode);
 
             var index = FindMessageIndex(ackId, sendQueue);
+            sendQueue.RemoveAt(index);
+
 
             if (index == -1)
             {
                 Debug.LogError("Client error, cannot resolve message with ack-id " + ackId + ".");
             }
             else 
-            {
-                sendQueue.RemoveAt(index);
+           {
+                
                 Debug.Log("Server-Ack " + ackId + ", " + sendQueue.Count + " messages in send queue remaining.");
             }
         }

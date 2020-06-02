@@ -26,6 +26,8 @@ public class GameStateComponent : MonoBehaviour
 
     public SoundList soundList;
 
+    public GameObject loadSpinnerObject;
+
     private float timeRemainingFromPreviousSession = 0;
     public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - ((Time.timeSinceLevelLoad - clockStartTime) + timeRemainingFromPreviousSession));
     public float GameTime => (float)Math.Round(maxTimeSeconds - TimeRemaining, 2);
@@ -93,20 +95,9 @@ public class GameStateComponent : MonoBehaviour
     {
         if (TimeRemaining <= 0 || Input.GetKeyUp(KeyCode.Slash))
         {
-            if (webComponent != null)
-            {
-                // stop the user from doing things
-                IsGameActive = false;
-
-                webComponent.SaveProgress(webComponent.scene + 1, (replyText, code) =>
-                {
-                    SceneManager.LoadScene(webComponent.scene + 1);
-                });
-            }
-            else
-            {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-            }
+            // fade the screen to black and load the next scene
+            FadeUtility.FadeToNextScene(loadSpinnerObject, webComponent, () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1));
+            
         }
     }
 
