@@ -5,6 +5,15 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+public enum GameStateComponentState
+{
+    CountDown,
+    InGame,
+    Paused,
+    LostServerConnection,
+    GameCompleted
+}
+
 public class GameStateComponent : MonoBehaviour
 {
     public static GameStateComponent Instance { get; set; }
@@ -28,9 +37,9 @@ public class GameStateComponent : MonoBehaviour
 
     public GameObject loadSpinnerObject;
 
-    private float timeRemainingFromPreviousSession = 0;
-    public float TimeRemaining => Mathf.Max(0, maxTimeSeconds - ((Time.timeSinceLevelLoad - clockStartTime) + timeRemainingFromPreviousSession));
-    public float GameTime => (float)Math.Round(maxTimeSeconds - TimeRemaining, 2);
+    public float TimeRemaining { get; private set; }
+
+    public GameStateComponentState State { get; private set; } = GameStateComponentState.CountDown;
 
     public int CompletedOrders => CollectedItems.Count -1;
     public GameObject[] RackObjects { get; private set; }
@@ -41,8 +50,6 @@ public class GameStateComponent : MonoBehaviour
     public List<OrderProperties> CurrentOrderList => CurrentOrderListIndex < Orders.Count ? Orders[CurrentOrderListIndex] : null;
 
     public int CurrentOrderLine { get; private set; } = 0;
-
-    private float clockStartTime;
 
     private WebCom webComponent;
     private AudioSource audioSource;
@@ -80,42 +87,88 @@ public class GameStateComponent : MonoBehaviour
             }
             else
             {
+                // consume any time remaining from the last time a session was run
+                // ie if the user aborts the game, we keep use of the last order sent to estimate
+                // when the game should start. This time is kept in the web component and consumed 
+                // one time by the game state. 
+                TimeRemaining = Math.Max(0, maxTimeSeconds - webComponent.ConsumeSessionTime());
                 Debug.Log("Webcom found using user token " + webComponent.UserToken);
             }
         }
         else
         {
             Debug.LogWarning("Cannot resolve WebCom object");
+            TimeRemaining = maxTimeSeconds;
         }
 
         audioSource = GetComponent<AudioSource>();
+
+        State = GameStateComponentState.CountDown;
     }
 
     public void Update()
     {
-        if (TimeRemaining <= 0 || Input.GetKeyUp(KeyCode.Slash))
+        switch (State)
         {
-            // fade the screen to black and load the next scene
-            FadeUtility.FadeToNextScene(loadSpinnerObject, webComponent, () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1));
-            
+            case GameStateComponentState.CountDown:
+                break;
+
+            case GameStateComponentState.InGame:
+
+                // no more time or the user hit the debug command to go to the next level ?
+                if (TimeRemaining <= 0 || CheckDebugKey(KeyCode.Slash))
+                {
+                    // fade the screen to black and load the next scene
+                    FadeUtility.FadeToNextScene(loadSpinnerObject, webComponent,
+                            () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1));
+
+                    State = GameStateComponentState.GameCompleted;
+                }
+                else
+                {
+                    TimeRemaining = Mathf.Max(0, TimeRemaining - Time.deltaTime);
+
+                    // check if the user wants to pause the game
+                    if (Input.GetKeyUp(KeyCode.P))
+                    {
+                        Time.timeScale = 0.0f;
+                        State = GameStateComponentState.Paused;
+                    }
+                    // debug command to decrease the time by 3 minutes
+                    else if (CheckDebugKey(KeyCode.Z))
+                    {
+                        TimeRemaining = Mathf.Max(0, TimeRemaining - 180);
+                    }
+                }
+                break;
+
+            case GameStateComponentState.Paused:
+                if (Input.GetKeyUp(KeyCode.P))
+                {
+                    Time.timeScale = 1.0f;
+                    State = GameStateComponentState.InGame;
+                }
+                break;
+
+            case GameStateComponentState.LostServerConnection:
+                break;
+
+            case GameStateComponentState.GameCompleted:
+
+                // just (wait for the server to ack and) do nothing 
+                break;
         }
     }
+
+    private bool CheckDebugKey(KeyCode key) => Debug.isDebugBuild && Input.GetKeyUp(key);
+    
 
     /// <summary>
     /// Start the game clock, will happen after for instance the countdown completes
     /// </summary>
     public void StartClock()
     {
-        clockStartTime = Time.timeSinceLevelLoad;
-
-        if (webComponent != null)
-        {
-            // consume any time remaining from the last time a session was run
-            // ie if the user aborts the game, we keep use of the last order sent to estimate
-            // when the game should start. This time is kept in the web component and consumed 
-            // one time by the game state. 
-            timeRemainingFromPreviousSession = webComponent.ConsumeSessionTime();
-        }
+        State = GameStateComponentState.InGame;
     }
 
 
@@ -146,12 +199,12 @@ public class GameStateComponent : MonoBehaviour
 
     public void OnItemTakenFromBox(ItemBehaviour itemLabel)
     {
-        Debug.Log("Item taken at " + GameTime);
+        Debug.Log("Item taken at " + TimeRemaining);
 
         _pickedupItems[itemLabel.gameObject] = new CollectedItem()
         {
             pos = itemLabel.OriginCoordinate,
-            ts = GameTime
+            ts = maxTimeSeconds - TimeRemaining
         };
     }
 
@@ -185,7 +238,7 @@ public class GameStateComponent : MonoBehaviour
                     CollectedItems[CurrentOrderListIndex].Add(collectedItem);
                 }
 
-                webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1], GameTime);
+                webComponent.PostOrder(CollectedItems[CollectedItems.Count - 1], maxTimeSeconds - TimeRemaining);
             }
             else
             {
