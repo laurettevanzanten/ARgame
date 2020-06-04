@@ -1,6 +1,9 @@
 ﻿
+using System;
+
+[Serializable]
 public class HeartbeatMessage
 {
-    public string token { get; set; }
-    public int timeStamp { get; set; }
+    public string token;
+    public int timeStamp;
 }
