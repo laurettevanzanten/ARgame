@@ -669,8 +669,7 @@ MonoBehaviour:
     game, instructions will guide you further in the process.\n\nTo summarize...\nPick
     as many orders correctly as possible within 15 minutes \nThe best three participants
     will each receive 20 euros cash\nOnce you start the game, you cannot pause it\nNow
-    you will play one short practice round to get acquianted with the game controls,
-    click the button below.\n\n"
+    you will first pick two pracitce orders \n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
   m_sharedMaterial: {fileID: 2164040, guid: 5302535af1044152a457ed104f1f4b91, type: 2}
@@ -715,7 +714,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: 629
+  m_firstOverflowCharacterIndex: 589
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -739,12 +738,12 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 725440221}
-    characterCount: 654
+    characterCount: 590
     spriteCount: 0
-    spaceCount: 118
-    wordCount: 113
+    spaceCount: 108
+    wordCount: 102
     linkCount: 0
-    lineCount: 15
+    lineCount: 14
     pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
@@ -1206,7 +1205,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.9032574, g: 0.9559975, b: 0.9622642, a: 0}
+  m_BackGroundColor: {r: 0.3254902, g: 0.47843137, b: 1, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

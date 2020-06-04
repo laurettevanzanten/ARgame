@@ -467,7 +467,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffb6ea8e66ee2924689039f38a1d776d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxTimeSeconds: 900
+  maxTimeSeconds: 240
   orders: {fileID: 4900000, guid: 35ee8549db2103e429e099b9be444d36, type: 3}
   rackSetup: {fileID: 4900000, guid: 14a51ace8ff3e0643b83e2ea01c464b9, type: 3}
   itemVariations:
