@@ -18,7 +18,7 @@ public class WebCom : MonoBehaviour
 {
     const string NetworkErrorText = "network error";
 
-    public string url = "http://localhost:3000/";
+    public string url = "http://localhost:3000";
     public string userName = "admin";
     public string password = "foo";
     public int    scene = 0;
@@ -90,7 +90,7 @@ public class WebCom : MonoBehaviour
                 else
                 {
                     Destroy(gameObject);
-                    break;
+                    return;
                 }
             }
         }
@@ -119,8 +119,14 @@ public class WebCom : MonoBehaviour
         }
 
         DontDestroyOnLoad(gameObject);
-    }
 
+        // check the url... too often there's a trailing / which takes up too much time debugging
+        if (url[url.Length-1] == '/')
+        {
+            url = url.Substring(0, url.Length - 1);
+            Debug.LogWarning("Url contains trailing slash, automatically removing this...");
+        }
+    }
 
     public void Update()
     {
@@ -158,6 +164,7 @@ public class WebCom : MonoBehaviour
         password = pwd;
         SessionTime = response.timeStamp;
 
+       
     }
 
     /// <summary>
@@ -335,7 +342,6 @@ public class WebCom : MonoBehaviour
         uwr.SetRequestHeader("Content-Type", "application/json");
 
         yield return uwr.SendWebRequest();
-
 
         if (uwr.isNetworkError)
         {

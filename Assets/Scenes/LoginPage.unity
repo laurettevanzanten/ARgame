@@ -5059,7 +5059,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b77cb00314b245d40adfa637f7f5ebcf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  url: https://stark-retreat-80721.herokuapp.com
+  url: http://localhost:3000
   userName: ???
   password: foo
   scene: 0
@@ -10349,15 +10349,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   keys:
-  - lerpDuration: 8
+  - lerpDuration: 20
     translation: {x: 960, y: 640, z: 0}
     scale: {x: 1, y: 1, z: 1}
     rotation: {x: 0, y: 0, z: 0}
-  - lerpDuration: 8
+  - lerpDuration: 22
     translation: {x: 400, y: 0, z: 0}
     scale: {x: 1.8, y: 1.8, z: 1}
     rotation: {x: 0, y: 0, z: 0}
-  - lerpDuration: 8
+  - lerpDuration: 24
     translation: {x: 350, y: 500, z: 0}
     scale: {x: 2, y: 2, z: 1}
     rotation: {x: 0, y: 0, z: 0}
