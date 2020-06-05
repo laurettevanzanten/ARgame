@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/Scenes/MiddlePage.unity
     guid: fc8d5f4010b0c52438f2f019271e588b
   - enabled: 1
+    path: Assets/Scenes/TutorialSceneGradual.unity
+    guid: 832e5f5f68f90ff47945a479bc0852fe
+  - enabled: 1
     path: Assets/Scenes/GradualScene.unity
     guid: 79351b1c6183a884ca4696481f098923
   - enabled: 1
